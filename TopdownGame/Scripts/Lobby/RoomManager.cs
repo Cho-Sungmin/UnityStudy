@@ -112,8 +112,8 @@ public class RoomManager : MonoBehaviour
 		int pivot2 = title.IndexOf("/");
 
 		roomInfo.m_title = title.Substring( 0 , pivot );
-		roomInfo.m_presentMembers = System.Int32.Parse( title.Substring( pivot+1 , pivot2 ) );
-		roomInfo.m_capacity = System.Int32.Parse( title.Substring( pivot2 , title.Length-1 ) );
+		roomInfo.m_presentMembers = System.UInt32.Parse( title.Substring( pivot+1 , pivot2 ) );
+		roomInfo.m_capacity = System.UInt32.Parse( title.Substring( pivot2 , title.Length-1 ) );
 
 		return roomInfo;
 	}

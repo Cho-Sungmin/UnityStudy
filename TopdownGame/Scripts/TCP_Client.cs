@@ -14,10 +14,10 @@ namespace Client {
 		Thread[] m_threadArr;
 		bool m_threadFlag = true;
 
-		System.Collections.Concurrent.ConcurrentQueue<Packet> m_recvQueue;
-		System.Collections.Concurrent.ConcurrentQueue<Packet> m_sendQueue;
+		System.Collections.Concurrent.ConcurrentQueue<InputByteStream> m_recvQueue;
+		System.Collections.Concurrent.ConcurrentQueue<InputByteStream> m_sendQueue;
 
-		Dictionary<int , System.Action<Packet>> m_handlerMap;
+		Dictionary<int , System.Action<InputByteStream>> m_handlerMap;
 
 
 		public virtual void Init()
@@ -35,11 +35,12 @@ namespace Client {
 			m_threadArr[0] = new Thread( this.RecvProcedure );
 
 			//--- Init queues ---//
-			m_recvQueue = new System.Collections.Concurrent.ConcurrentQueue<Packet>();
-			m_sendQueue = new System.Collections.Concurrent.ConcurrentQueue<Packet>();
+			m_recvQueue = new System.Collections.Concurrent.ConcurrentQueue<InputByteStream>();
+			m_sendQueue = new System.Collections.Concurrent.ConcurrentQueue<InputByteStream>();
 
 			//--- Register handlers in this class ---//
-			m_handlerMap = new Dictionary<int, System.Action<Packet>>();
+			m_handlerMap = new Dictionary<int, System.Action<InputByteStream>>();
+
 		
 		}
 
@@ -52,7 +53,7 @@ namespace Client {
 			}
 		}
 
-		public void RegisterHandler( int key , System.Action<Packet> handler )
+		public void RegisterHandler( int key , System.Action<InputByteStream> handler )
 		{
 			m_handlerMap.Add( key , handler );
 		}
@@ -78,21 +79,24 @@ namespace Client {
 		}
 
 		//--- Functions ---//
-		public void PostMessage( Packet msg )
+		public void PostMessage( InputByteStream msg )
 		{
 			//--- Enqueue msg to send ---//
 			System.Console.WriteLine("PostMessage");
 			m_sendQueue.Enqueue( msg );
 		}
-		void ProcessMessage( ref Packet msg )
+		void ProcessMessage( ref InputByteStream msg )
 		{
+			Header header = new Header();
+			header.Read( msg );
+
 			//--- Process messages fetched ---//
-			if( m_handlerMap.ContainsKey(msg.head.func) )
-				m_handlerMap[msg.head.func]( msg );
+			if( m_handlerMap.ContainsKey(header.func) )
+				m_handlerMap[header.func]( msg );
 		}
 		void DispatchToSend()
 		{
-			Packet packet;
+			InputByteStream packet;
 
 			if( m_threadFlag && !m_sendQueue.IsEmpty )
 			{
@@ -103,7 +107,7 @@ namespace Client {
 
 		void DispatchToRecv()
 		{
-			Packet packet;
+			InputByteStream packet;
 
 			if( m_threadFlag && !m_recvQueue.IsEmpty )
 			{
@@ -121,15 +125,16 @@ namespace Client {
 		void RecvProcedure()
 		{
 			System.Console.WriteLine("Start RecvProcedure()");
-			Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
+			InputByteStream ibstream;
 
 			while( m_threadFlag )
 			{
 				//--- Receive messages and enqueue data ---//
 				try {
-					TCP.TCP.RecvPacket( m_serverSock , ref packet );
-					m_recvQueue.Enqueue( packet );
-					packet.DisplayPacket();
+					ibstream = new InputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+					Recv( ibstream );
+					m_recvQueue.Enqueue( ibstream );
+					//ibstream.DisplayPacket();
 				}
 				catch( System.Net.Sockets.SocketException e )
 				{
@@ -139,14 +144,14 @@ namespace Client {
 			}
 		}
 
-		public void Send( Packet packet )
+		public void Send( InputByteStream packet )
 		{
 			TCP.TCP.SendPacket( m_serverSock , packet );
 		}
 
-		public void Recv( ref Packet packet )
+		public void Recv( InputByteStream packet )
 		{
-			TCP.TCP.RecvPacket( m_serverSock , ref packet );
+			TCP.TCP.RecvPacket( m_serverSock , packet );
 		}
 	}
 }

@@ -27,7 +27,7 @@ public class LoginSession : Session
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_VERIFY_FAIL , ResVerifyUserInfo );
 	}
 
-	void ReqVerifyUserInfo( Packet packet )
+	void ReqVerifyUserInfo( InputByteStream packet )
 	{
 		//Debug.Log("ReqVerifyUserInfo()");
 		try {
@@ -38,14 +38,17 @@ public class LoginSession : Session
 			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
 		}
 	}
-	void ResVerifyUserInfo( Packet packet )
+	void ResVerifyUserInfo( InputByteStream packet )
 	{
+		Header header = new Header();
+		header.Read( packet );
+
 		bool result = false;
 
-		if( packet.head.func == (int) FUNCTION_CODE.RES_VERIFY_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_VERIFY_SUCCESS )
 		{
 			result = true;
-			userInfo.SetBytes( packet.data );
+			userInfo.Read( packet );
 		}
 
 		loginManager.OnSignIn( result );

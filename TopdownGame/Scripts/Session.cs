@@ -53,7 +53,7 @@ public class Session
 	}
 
 	//--- Functions ---//
-	public void PostMessage( Packet msg )
+	public void PostMessage( InputByteStream msg )
 	{
 		//--- Enqueue msg to send ---//
 		System.Console.WriteLine("PostMessage");

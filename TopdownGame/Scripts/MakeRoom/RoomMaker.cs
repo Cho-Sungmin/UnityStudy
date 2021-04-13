@@ -28,18 +28,19 @@ public class RoomMaker : MonoBehaviour
 
 	void OnCreateButtonClick()
     {
-        byte[] title = System.Text.Encoding.Default.GetBytes(titleInput.text + ",");
-        byte[] capacity = System.Text.Encoding.Default.GetBytes( capacityBox.options[capacityBox.value].text + "," );
-        int len = title.Length + capacity.Length;
+        Room roomInfo = new Room();
+        
+        roomInfo.m_capacity = System.UInt32.Parse( capacityBox.options[capacityBox.value].text );
+        roomInfo.m_id = 0;
+        roomInfo.m_presentMembers = 0;
+        roomInfo.m_title = titleInput.text;
 
-        Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
+        int len = roomInfo.GetSize();
 
-        packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_MAKE_ROOM , len );
+        OutputByteStream packet = new OutputByteStream( (System.UInt32)len );
+        roomInfo.Write( packet );
 
-        packet.SetPayload( capacity );
-        packet.SetPayload( title, 0 , capacity.Length );
-
-        lobbySession.RequestMakeRoom( packet );
+        lobbySession.RequestMakeRoom( new InputByteStream( packet ) );
 
     }
 

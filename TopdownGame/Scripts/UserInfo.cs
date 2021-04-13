@@ -1,74 +1,40 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 
 
 public class UserInfo {
-    byte[] m_id;  
-    byte[] m_pw; 
+    public string m_id = "";  
+    public string m_pw = ""; 
+    public string m_name = "";
+    public UInt32 m_age = 0;
 
-    byte[] m_name;
-    int m_age = 0;
 
 
-    //--- Constructor ---//
-    
-    public UserInfo()
-    {
-        m_id = new byte[12];
-        m_pw = new byte[12];
-        m_name = new byte[12];
-    }
+    public int GetSize()
+    { return m_id.Length + m_pw.Length + m_name.Length + sizeof(UInt32); }
 
-    //--- Getter/Setter ---//
 
-    public byte[] GetId()
-    {
-        return m_id;
-    }
-    public byte[] GetPw()
-    {
-        return m_pw;
-    }
-    public byte[] GetName()
-    {
-        return m_name;
-    }
 
-    public void SetId( string id )
-    {
-        if( id.Length < m_id.Length )
-		{
-			for( int i=id.Length; i<m_id.Length; i++ ) 
-				id += " ";
-		}
-        byte[] tmp_id = System.Text.Encoding.UTF8.GetBytes(id);
+    public void Write( OutputByteStream stream )
+	{
+        stream.Write( (UInt32) GetSize() );		// Write size of object first
+		stream.Write( m_id );
+		stream.Write( m_pw );
+		stream.Write( m_name );
+		stream.Write( m_age );
+	}
 
-        System.Buffer.BlockCopy( tmp_id , 0 , m_id , 0 , tmp_id.Length );
-    }
-    public void SetPw( string pw )
-    {
-        if( pw.Length < m_pw.Length )
-		{
-			for( int i=pw.Length; i<m_pw.Length; i++ ) 
-				pw += " ";
-		}
-        byte[] tmp_pw = System.Text.Encoding.UTF8.GetBytes(pw);
+	public void Read( InputByteStream stream )
+	{
+		UInt32 tmp;
 
-        System.Buffer.BlockCopy( tmp_pw , 0 , m_pw , 0 , tmp_pw.Length );
-    }
-    public void SetName( string name )
-    {
-        if( name.Length < m_name.Length )
-		{
-			for( int i=name.Length; i<m_name.Length; i++ ) 
-				name += " ";
-		}
-        byte[] tmp_name = System.Text.Encoding.UTF8.GetBytes(name);
+		stream.Read( m_id );
+		stream.Read( m_pw );
+		stream.Read( m_name );	
+		stream.Read( out tmp );
+        m_age = tmp;
+	}
 
-        System.Buffer.BlockCopy( tmp_name , 0 , m_name , 0 , tmp_name.Length );
-        //strncpy( m_name , newName.c_str() , sizeof(m_name) );
-    }
-
+    #if false
     public byte[] GetBytes()
     {
         int len = m_id.Length + m_pw.Length + m_name.Length + sizeof(int);
@@ -87,11 +53,6 @@ public class UserInfo {
 
     }
 
-    public int Size()
-    {
-        return m_id.Length + m_pw.Length + m_name.Length + sizeof(int);
-    }
-
     public void SetBytes( byte[] data )
     {
         int offset = 0;
@@ -103,6 +64,12 @@ public class UserInfo {
         System.Buffer.BlockCopy( data , offset , m_name , 0 , m_name.Length );
         offset += m_name.Length;
         m_age = System.BitConverter.ToInt32(data , offset );
+    }
+
+    #endif
+    public int SIZE()
+    {
+        return m_id.Length + m_pw.Length + m_name.Length + sizeof(UInt32);
     }
 
 }

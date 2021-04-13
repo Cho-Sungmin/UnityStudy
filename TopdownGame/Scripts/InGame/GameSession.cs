@@ -42,26 +42,36 @@ public class GameSession : Session
 
 	public void RequestJoinGame()
 	{
+		Header header = new Header();
+
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_JOIN_GAME;
+		header.len = 0;
+		header.sessionID = 0;
+
 		if( roomInfo == null )
 			return ;
 
-		Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
+		//--- Set data with room_id and user_id ---//
 
-		packet.head.type = (int) PACKET_TYPE.REQ;
-		packet.head.func = (int) FUNCTION_CODE.REQ_JOIN_GAME;
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
 
-		//--- TODO : Set data with room_id and user_id ---//
+		header.Write( packet );
+
 		string room_id = "" + roomInfo.m_id;
-		packet.SetPayload( System.Text.Encoding.Default.GetBytes(room_id) );
-		packet.SetPayload( userInfo.GetId() , 0 , room_id.Length );
+		packet.Write( room_id );
+		packet.Write( userInfo.m_id );
 
-
-		client.Send( packet );
+		client.Send( new InputByteStream( packet ) );
 	}
 
-	void ResponseJoinGame( Packet packet )
+	void ResponseJoinGame( InputByteStream packet )
 	{
-		if( packet.head.func == (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS )
+		Header header = new Header();
+
+		header.Read( packet );
+
+		if( header.func == (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS )
 		{
 			roomManager.LoadRoom( roomInfo );
 		}

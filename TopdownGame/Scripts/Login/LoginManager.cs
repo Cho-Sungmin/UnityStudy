@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System;
 
 public class LoginManager : MonoBehaviour
 {
@@ -38,25 +39,24 @@ public class LoginManager : MonoBehaviour
 	{
 		userInfo = new UserInfo();
 
-		userInfo.SetId( id_input.text );
-		userInfo.SetPw( pw_input.text );
-
-		int payload_len = userInfo.GetId().Length + userInfo.GetPw().Length;
+		userInfo.m_id = id_input.text;
+		userInfo.m_pw = pw_input.text;
 
 		//--- Set packet header ---//
-		HEAD header = new HEAD( (int)PACKET_TYPE.REQ , (int)FUNCTION_CODE.REQ_VERIFY , payload_len , 0 );
-
-		//--- Convert string to bytes ---//
-		byte[] tmp_data = new byte[payload_len];
-		System.Buffer.BlockCopy( userInfo.GetBytes() , 0 , tmp_data , 0 , payload_len );
+		Header header = new Header();
+		
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_VERIFY;
+		header.len = ( UInt32 ) userInfo.GetSize();
+		header.sessionID = 0;
 
 		//--- Set payload of packet ---//
-		Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
-		packet.head = header;
-		packet.SetPayload( tmp_data );
+		OutputByteStream obstream = new OutputByteStream( Header.SIZE + header.len );
+
+		userInfo.Write( obstream );
 
 		// Post REQ_MSG to msg_queue
-		loginSession.PostMessage( packet );
+		loginSession.PostMessage( new InputByteStream( obstream ) );
 		
 	}
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
+using System;
 
 public class LobbySession : Session
 {
@@ -55,11 +55,19 @@ public class LobbySession : Session
 		if( userInfo == null )
 			return ;
 		
-		Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
-		
-		packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ENTER_LOBBY , userInfo.Size());
-		packet.SetPayload( userInfo.GetBytes() );
-		client.Send( packet );
+		OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		Header header = new Header();
+
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_ENTER_LOBBY;
+		header.len = ( UInt32 ) userInfo.GetSize();
+		header.sessionID = 0;
+
+		header.Write( obstream );
+		userInfo.Write( obstream );
+
+
+		client.Send( new InputByteStream( obstream ) );
 	}
 
 	public List<Room> GetRoomList()
@@ -67,10 +75,17 @@ public class LobbySession : Session
 		return roomList;
 	}
 
-    public void RequestEnterLobby( Packet packet )
+    public void RequestEnterLobby( InputByteStream packet )
 	{
-        packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ENTER_LOBBY , 0);
-		//Debug.Log("RequestEnterLobby()");
+		Header header = new Header();
+		header.Read( packet );
+	
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_ENTER_LOBBY;
+		header.len = ( UInt32 ) userInfo.GetSize();
+		header.sessionID = 0;
+
+     
 		try {
 			client.Send( packet );
 		}
@@ -79,11 +94,12 @@ public class LobbySession : Session
 			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
 		}
 	}
-    void ResponseEnterLobby( Packet packet )
+    void ResponseEnterLobby( InputByteStream packet )
 	{
-		//Debug.Log("ResponseEnterLobby()");
+		Header header = new Header();
+		header.Read( packet );
 
-		if( packet.head.func == (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS )
         {
 			RequestRoomList( packet );
         }
@@ -93,11 +109,16 @@ public class LobbySession : Session
 		}
 	}
 
-	public void RequestRoomList( Packet packet )
+	public void RequestRoomList( InputByteStream packet )
 	{
-	//Debug.Log("RequestRoomList()");
+		Header header = new Header();
+		header.Read( packet );
+	
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_ROOM_LIST;
+		header.len = ( UInt32 ) userInfo.GetSize();
+		header.sessionID = 0;
 
-		packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ROOM_LIST , 0 );
 
 		try {
 			client.Send( packet );
@@ -108,13 +129,14 @@ public class LobbySession : Session
 		}
 	}
 
-	void ResponseRoomList( Packet packet )
+	void ResponseRoomList( InputByteStream packet )
 	{
-		//Debug.Log("ResponseRoomList()");
+		Header header = new Header();
+		header.Read( packet );
 
-		JSON.JsonParser jsonParser = new JSON.JsonParser( packet.data );
+		JSON.JsonParser jsonParser = new JSON.JsonParser( packet.GetBuffer() );
 
-		if( packet.head.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
         {
 			//--- 받아온 방 목록 데이터를 파싱해서 유니티에 세팅 ---//
 
@@ -140,8 +162,8 @@ public class LobbySession : Session
 		{
 			room = new Room();
 
-			room.m_capacity = System.Convert.ToInt32(rooms["capacity"] as string);
-			room.m_presentMembers = System.Convert.ToInt32(rooms["presentMembers"] as string);
+			room.m_capacity = System.Convert.ToUInt32(rooms["capacity"] as string);
+			room.m_presentMembers = System.Convert.ToUInt32(rooms["presentMembers"] as string);
 			room.m_title = rooms["title"] as string;
 		
 			roomList.Add(room);
@@ -149,10 +171,22 @@ public class LobbySession : Session
 
 	}
 
-	public void RequestMakeRoom( Packet packet )
+	public void RequestMakeRoom( InputByteStream data )
 	{
+		Header header = new Header();
+
+		header.type = (int) PACKET_TYPE.REQ;
+		header.func = (int) FUNCTION_CODE.REQ_MAKE_ROOM;
+		header.len = ( UInt32 ) data.GetRemainLength();
+		header.sessionID = 0;
+
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
+
+		header.Write( packet );
+		packet.Write( data.GetBuffer() , header.len );
+
 		try {
-			client.Send( packet );
+			client.Send( new InputByteStream( packet ) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
@@ -160,13 +194,16 @@ public class LobbySession : Session
 		}
 	}
 
-	void ResponseMakeRoom( Packet packet )
+	void ResponseMakeRoom( InputByteStream packet )
 	{
+		Header header = new Header();
+
+		header.Read( packet );
 		
-		if( packet.head.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
         {
 			//--- TODO : Update information in game session  ---//
-			JSON.JsonParser jsonParser = new JSON.JsonParser( packet.data );
+			JSON.JsonParser jsonParser = new JSON.JsonParser( packet.GetBuffer() );
 			SetRoomList( roomList , jsonParser );
 
 			roomManager.JoinRoom( roomList.Count-1 );
