@@ -41,7 +41,6 @@ public class RoomMaker : MonoBehaviour
         roomInfo.Write( packet );
 
         lobbySession.RequestMakeRoom( new InputByteStream( packet ) );
-
     }
 
     private void OnDestroy()

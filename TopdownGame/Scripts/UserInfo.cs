@@ -16,7 +16,6 @@ public class UserInfo {
 
     public void Write( OutputByteStream stream )
 	{
-        stream.Write( (UInt32) GetSize() );		// Write size of object first
 		stream.Write( m_id );
 		stream.Write( m_pw );
 		stream.Write( m_name );
@@ -29,7 +28,7 @@ public class UserInfo {
 
 		stream.Read( m_id );
 		stream.Read( m_pw );
-		stream.Read( m_name );	
+		stream.Read( m_name );
 		stream.Read( out tmp );
         m_age = tmp;
 	}

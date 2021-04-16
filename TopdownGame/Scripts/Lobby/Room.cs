@@ -14,7 +14,6 @@ public class Room
 
 	public void Write( OutputByteStream stream )
 	{
-		stream.Write( (UInt32)GetSize() );		// Write size of object first
 		stream.Write( (UInt32)m_id );
 		stream.Write( (UInt32)m_capacity );
 		stream.Write( (UInt32)m_presentMembers );
