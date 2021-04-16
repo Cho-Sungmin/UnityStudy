@@ -134,14 +134,9 @@ public class LobbySession : Session
 		Header header = new Header();
 		header.Read( packet );
 
-		JSON.JsonParser jsonParser = new JSON.JsonParser( packet.GetBuffer() );
-
 		if( header.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
         {
-			//--- 받아온 방 목록 데이터를 파싱해서 유니티에 세팅 ---//
-
-			SetRoomList( roomList , jsonParser );
-
+			SetRoomList( roomList , packet );
 			loadingLobby.LoadRoom();
         }
 		else
@@ -150,40 +145,32 @@ public class LobbySession : Session
 		}
 	}
 
-	public void SetRoomList( List<Room> roomList , JSON.JsonParser jsonParser )
+	public void SetRoomList( List<Room> roomList , InputByteStream ibstream )
 	{
 		Room room;
-		Hashtable rooms = jsonParser.m_hashtable["room list"] as Hashtable;
 
-		if( rooms == null )
-			return ;
-
-		for (int n=0; n<rooms.Count; n++)
+		while( !ibstream.IsEmpty() )
 		{
 			room = new Room();
-
-			room.m_capacity = System.Convert.ToUInt32(rooms["capacity"] as string);
-			room.m_presentMembers = System.Convert.ToUInt32(rooms["presentMembers"] as string);
-			room.m_title = rooms["title"] as string;
-		
+			room.Read( ibstream );
 			roomList.Add(room);
 		}
 
 	}
 
-	public void RequestMakeRoom( InputByteStream data )
+	public void RequestMakeRoom( InputByteStream roomInfoData )
 	{
 		Header header = new Header();
 
 		header.type = (int) PACKET_TYPE.REQ;
 		header.func = (int) FUNCTION_CODE.REQ_MAKE_ROOM;
-		header.len = ( UInt32 ) data.GetRemainLength();
+		header.len = ( UInt32 ) roomInfoData.GetRemainLength();
 		header.sessionID = 0;
 
 		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
 
 		header.Write( packet );
-		packet.Write( data.GetBuffer() , header.len );
+		packet.Write( roomInfoData.GetBuffer() , header.len );
 
 		try {
 			client.Send( new InputByteStream( packet ) );
@@ -202,10 +189,9 @@ public class LobbySession : Session
 		
 		if( header.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
         {
-			//--- TODO : Update information in game session  ---//
-			JSON.JsonParser jsonParser = new JSON.JsonParser( packet.GetBuffer() );
-			SetRoomList( roomList , jsonParser );
+			//--- Update information in game session  ---//
 
+			SetRoomList( roomList , packet );
 			roomManager.JoinRoom( roomList.Count-1 );
         }
 		else
