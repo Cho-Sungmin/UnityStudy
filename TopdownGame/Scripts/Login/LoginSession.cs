@@ -22,6 +22,7 @@ public class LoginSession : Session
 	public override void Init() 
 	{
 		client.Init();
+		client.RegisterHandler( (int) FUNCTION_CODE.WELCOME , NotiWelcomeInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_VERIFY , ReqVerifyUserInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_VERIFY_SUCCESS , ResVerifyUserInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_VERIFY_FAIL , ResVerifyUserInfo );
@@ -41,7 +42,7 @@ public class LoginSession : Session
 	void ResVerifyUserInfo( InputByteStream packet )
 	{
 		Header header = new Header();
-		header.Read( packet );
+		header.Read( ref packet );
 
 		bool result = false;
 

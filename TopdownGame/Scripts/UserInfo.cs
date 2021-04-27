@@ -5,7 +5,7 @@ public class UserInfo {
     public string m_id = "";  
     public string m_pw = ""; 
     public string m_name = "";
-    public UInt32 m_age = 0;
+    public byte m_age = 0;
 
 
 
@@ -24,13 +24,11 @@ public class UserInfo {
 
 	public void Read( InputByteStream stream )
 	{
-		UInt32 tmp;
 
-		stream.Read( m_id );
-		stream.Read( m_pw );
-		stream.Read( m_name );
-		stream.Read( out tmp );
-        m_age = tmp;
+		stream.Read( out m_id );
+		stream.Read( out m_pw );
+		stream.Read( out m_name );
+		stream.Read( out m_age );
 	}
 
     #if false
@@ -70,6 +68,5 @@ public class UserInfo {
     {
         return m_id.Length + m_pw.Length + m_name.Length + sizeof(UInt32);
     }
-
 }
 

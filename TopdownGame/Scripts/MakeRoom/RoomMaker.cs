@@ -31,7 +31,7 @@ public class RoomMaker : MonoBehaviour
         Room roomInfo = new Room();
         
         roomInfo.m_capacity = System.UInt32.Parse( capacityBox.options[capacityBox.value].text );
-        roomInfo.m_id = 0;
+        roomInfo.m_id = "0";
         roomInfo.m_presentMembers = 0;
         roomInfo.m_title = titleInput.text;
 

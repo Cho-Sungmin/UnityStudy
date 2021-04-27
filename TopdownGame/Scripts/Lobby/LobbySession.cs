@@ -38,7 +38,8 @@ public class LobbySession : Session
         
         client.Init();
         
-		client.RegisterHandler( (int) FUNCTION_CODE.REQ_ENTER_LOBBY , RequestEnterLobby );
+		client.RegisterHandler( (int) FUNCTION_CODE.WELCOME , RequestEnterLobby );
+		//client.RegisterHandler( (int) FUNCTION_CODE.REQ_ENTER_LOBBY , RequestEnterLobby );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_ROOM_LIST , RequestRoomList );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_MAKE_ROOM , RequestMakeRoom );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS , ResponseEnterLobby );
@@ -55,19 +56,23 @@ public class LobbySession : Session
 		if( userInfo == null )
 			return ;
 		
-		OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+
+		userInfo.Write( payload );
+
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + (UInt32)payload.GetLength() );
+
 		Header header = new Header();
 
 		header.type = (int) PACKET_TYPE.REQ;
 		header.func = (int) FUNCTION_CODE.REQ_ENTER_LOBBY;
-		header.len = ( UInt32 ) userInfo.GetSize();
-		header.sessionID = 0;
+		header.len = ( UInt32 ) payload.GetLength();
+		header.sessionID = GetSessionID();
 
-		header.Write( obstream );
-		userInfo.Write( obstream );
+		header.Write( ref packet );
+		packet.Write( payload.GetBuffer() , header.len );
 
-
-		client.Send( new InputByteStream( obstream ) );
+		client.Send( new InputByteStream( packet ) );
 	}
 
 	public List<Room> GetRoomList()
@@ -75,15 +80,16 @@ public class LobbySession : Session
 		return roomList;
 	}
 
+	#if false
     public void RequestEnterLobby( InputByteStream packet )
 	{
 		Header header = new Header();
-		header.Read( packet );
+		header.Read( ref packet );
 	
 		header.type = (int) PACKET_TYPE.REQ;
 		header.func = (int) FUNCTION_CODE.REQ_ENTER_LOBBY;
 		header.len = ( UInt32 ) userInfo.GetSize();
-		header.sessionID = 0;
+		header.sessionID = GetSessionID();
 
      
 		try {
@@ -94,10 +100,12 @@ public class LobbySession : Session
 			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
 		}
 	}
+	#endif
+
     void ResponseEnterLobby( InputByteStream packet )
 	{
 		Header header = new Header();
-		header.Read( packet );
+		header.Read( ref packet );
 
 		if( header.func == (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS )
         {
@@ -112,16 +120,24 @@ public class LobbySession : Session
 	public void RequestRoomList( InputByteStream packet )
 	{
 		Header header = new Header();
-		header.Read( packet );
+		header.Read( ref packet );
+
+		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		userInfo.Write( payload );
 	
 		header.type = (int) PACKET_TYPE.REQ;
 		header.func = (int) FUNCTION_CODE.REQ_ROOM_LIST;
-		header.len = ( UInt32 ) userInfo.GetSize();
-		header.sessionID = 0;
+		header.len = ( UInt32 ) payload.GetLength();
+		header.sessionID = GetSessionID();
 
+		OutputByteStream resPacket = new OutputByteStream( Header.SIZE + header.len );
+		header.Write( ref resPacket );
+		resPacket.Write( payload.GetBuffer() , header.len );
+
+		
 
 		try {
-			client.Send( packet );
+			client.Send( new InputByteStream(resPacket) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
@@ -132,7 +148,7 @@ public class LobbySession : Session
 	void ResponseRoomList( InputByteStream packet )
 	{
 		Header header = new Header();
-		header.Read( packet );
+		header.Read( ref packet );
 
 		if( header.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
         {
@@ -149,7 +165,7 @@ public class LobbySession : Session
 	{
 		Room room;
 
-		while( !ibstream.IsEmpty() )
+		while( ibstream.GetLength() > 0 )
 		{
 			room = new Room();
 			room.Read( ibstream );
@@ -164,12 +180,12 @@ public class LobbySession : Session
 
 		header.type = (int) PACKET_TYPE.REQ;
 		header.func = (int) FUNCTION_CODE.REQ_MAKE_ROOM;
-		header.len = ( UInt32 ) roomInfoData.GetRemainLength();
+		header.len = ( UInt32 ) roomInfoData.GetLength();
 		header.sessionID = 0;
 
 		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
 
-		header.Write( packet );
+		header.Write( ref packet );
 		packet.Write( roomInfoData.GetBuffer() , header.len );
 
 		try {
@@ -185,7 +201,7 @@ public class LobbySession : Session
 	{
 		Header header = new Header();
 
-		header.Read( packet );
+		header.Read( ref packet );
 		
 		if( header.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
         {
@@ -198,6 +214,12 @@ public class LobbySession : Session
 		{
 			//Debug.Log("Failed to load room list");
 		}
+	}
+
+	public void RequestEnterLobby( InputByteStream packet )
+	{
+		NotiWelcomeInfo( packet );
+		RequestEnterLobby();
 	}
 
 }

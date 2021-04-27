@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -25,7 +25,7 @@ namespace Client {
 
 			//--- Init socket ---//
 			m_serverSock = new Socket( AddressFamily.InterNetwork , SocketType.Stream , ProtocolType.Tcp );
-			m_serverAddr = IPAddress.Parse("192.168.0.5");
+			m_serverAddr = IPAddress.Parse("192.168.0.6");
 
 			m_serverSock.Blocking = true;
 
@@ -62,7 +62,7 @@ namespace Client {
 		{
 			try {
 				m_serverSock.Connect( m_serverAddr , port );
-				System.Console.Write("서버 연결  성공!!!");
+				System.Console.Write( "서버 연결 성공!!!" );
 			}
 			catch( System.Exception e )
 			{
@@ -79,7 +79,7 @@ namespace Client {
 		}
 
 		//--- Functions ---//
-		public void PostMessage( InputByteStream msg )
+		public void PostMessage( ref InputByteStream msg )
 		{
 			//--- Enqueue msg to send ---//
 			System.Console.WriteLine("PostMessage");
@@ -88,7 +88,8 @@ namespace Client {
 		void ProcessMessage( ref InputByteStream msg )
 		{
 			Header header = new Header();
-			header.Read( msg );
+			header.Read( ref msg );
+			msg.flush();
 
 			//--- Process messages fetched ---//
 			if( m_handlerMap.ContainsKey(header.func) )
@@ -131,8 +132,7 @@ namespace Client {
 			{
 				//--- Receive messages and enqueue data ---//
 				try {
-					ibstream = new InputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
-					Recv( ibstream );
+					Recv( out ibstream );
 					m_recvQueue.Enqueue( ibstream );
 					//ibstream.DisplayPacket();
 				}
@@ -149,9 +149,10 @@ namespace Client {
 			TCP.TCP.SendPacket( m_serverSock , packet );
 		}
 
-		public void Recv( InputByteStream packet )
+		public void Recv( out InputByteStream packet )
 		{
-			TCP.TCP.RecvPacket( m_serverSock , packet );
+			TCP.TCP.RecvPacket( m_serverSock , out packet );
 		}
+
 	}
 }

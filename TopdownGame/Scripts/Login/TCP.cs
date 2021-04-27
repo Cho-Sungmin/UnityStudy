@@ -21,8 +21,11 @@ namespace TCP {
 			if( head_len != 0 )
 				throw new SocketException(); 
 
+				Header header = new Header();
+				header.Read( ref packet );
+
 			len = 0;
-			int body_len = packet.GetRemainLength() - Header.SIZE;
+			int body_len = (int) header.len;
 
 			//--- Send payload ---//
 			while( body_len > 0 )
@@ -37,15 +40,16 @@ namespace TCP {
 				throw new SocketException();
 		}
 
-		public static void RecvPacket( Socket socket , InputByteStream packet )
+		public static void RecvPacket( Socket socket , out InputByteStream packet )
 		{
 			int len = 0;
 			int head_len = Header.SIZE;
-			byte[] dataToSend = packet.GetBuffer();
+			InputByteStream head = new InputByteStream( (uint)head_len );
+			byte[] headerToRecv = head.GetBuffer();
 			
 			//--- Receive header ---//
 			do{
-				len = socket.Receive( dataToSend , len , head_len , SocketFlags.None );
+				len = socket.Receive( headerToRecv , len , head_len , SocketFlags.None );
 				head_len -= len;
 			}while( head_len > 0 );
 
@@ -54,19 +58,25 @@ namespace TCP {
 
 			len = 0;
 			Header header = new Header();
-			header.Read( packet );
+			header.Read( ref head );
 
 			int body_len = (int)header.len;
+			OutputByteStream obstream = new OutputByteStream( Header.SIZE + (uint)body_len );
+			header.Write( ref obstream );
+
+			byte[] payloadToRecv = new byte[body_len];
 
 			//--- Receive payload ---//
-			do{
-				len = socket.Receive( dataToSend , Header.SIZE + len , body_len , SocketFlags.None );
+			while( body_len > 0 ){
+				len = socket.Receive( payloadToRecv , len , body_len , SocketFlags.None );
 				body_len -= len;
-			}while( body_len > 0 );
+			}
+
+			obstream.Write( payloadToRecv , (uint)payloadToRecv.Length );
+			packet = new InputByteStream( obstream );
 
 			if( body_len != 0 )
 				throw new SocketException();
-
 			
 		}
 	}

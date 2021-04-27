@@ -42,21 +42,26 @@ public class LoginManager : MonoBehaviour
 		userInfo.m_id = id_input.text;
 		userInfo.m_pw = pw_input.text;
 
-		//--- Set packet header ---//
+		//--- Set payload of packet ---//
+		OutputByteStream payload = new OutputByteStream( (UInt32)TCP.TCP.MAX_PAYLOAD_SIZE );
+		userInfo.Write( payload );
+
+		//--- Set header of packet ---//
 		Header header = new Header();
 		
-		header.type = (int) PACKET_TYPE.REQ;
-		header.func = (int) FUNCTION_CODE.REQ_VERIFY;
-		header.len = ( UInt32 ) userInfo.GetSize();
-		header.sessionID = 0;
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_VERIFY;
+		header.len = (UInt32) payload.GetLength();
+		header.sessionID = loginSession.GetSessionID();
 
-		//--- Set payload of packet ---//
-		OutputByteStream obstream = new OutputByteStream( Header.SIZE + header.len );
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + (UInt32)payload.GetLength() );
+		header.Write( ref packet );
+		packet.Write( payload.GetBuffer() , header.len );
 
-		userInfo.Write( obstream );
+		InputByteStream ibstream = new InputByteStream( packet );
 
 		// Post REQ_MSG to msg_queue
-		loginSession.PostMessage( new InputByteStream( obstream ) );
+		loginSession.PostMessage( ref ibstream );
 		
 	}
 
@@ -64,6 +69,11 @@ public class LoginManager : MonoBehaviour
 	{
 		if( result )
 		{
+			loginSession.userInfo.m_id = userInfo.m_id;
+			loginSession.userInfo.m_pw = userInfo.m_pw;
+			loginSession.userInfo.m_name = userInfo.m_name;
+			loginSession.userInfo.m_age = userInfo.m_age;
+			
 			SceneManager.LoadScene( "LoadingLobby" , LoadSceneMode.Single );
 			Debug.Log("로그인 성공!!!");
 		}

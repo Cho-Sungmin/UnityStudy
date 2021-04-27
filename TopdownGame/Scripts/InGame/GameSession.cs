@@ -1,5 +1,4 @@
-﻿using System.Threading;
-
+﻿
 public class GameSession : Session
 {
 	RoomManager roomManager;
@@ -27,6 +26,7 @@ public class GameSession : Session
 		client.Init();
 
 		//--- Register handler ---//
+		client.RegisterHandler( (int) FUNCTION_CODE.WELCOME , NotiWelcomeInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS , ResponseJoinGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_FAIL , ResponseJoinGame );
 		
@@ -56,7 +56,7 @@ public class GameSession : Session
 
 		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
 
-		header.Write( packet );
+		header.Write( ref packet );
 
 		string room_id = "" + roomInfo.m_id;
 		packet.Write( room_id );
@@ -69,7 +69,7 @@ public class GameSession : Session
 	{
 		Header header = new Header();
 
-		header.Read( packet );
+		header.Read( ref packet );
 
 		if( header.func == (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS )
 		{

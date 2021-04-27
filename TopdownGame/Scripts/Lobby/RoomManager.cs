@@ -97,7 +97,7 @@ public class RoomManager : MonoBehaviour
 
 			string title_sub = " ( " + members + " / " + capacity + " ) ";
 
-			roomObjectList[i].transform.GetChild(1).GetComponent<Text>().text = title.Insert( title.IndexOf('\0') , title_sub );
+			roomObjectList[i].transform.GetChild(1).GetComponent<Text>().text = title.Insert( title.Length , title_sub );
 		}
 	}
 

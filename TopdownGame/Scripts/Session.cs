@@ -1,10 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
+﻿
 
 public class Session
 {
 	int PORT;
+	uint id = 0;
 	public Client.TCP_Client client;
 	
 	bool isOpen = false;
@@ -52,12 +51,22 @@ public class Session
 		client.Disconnect();
 	}
 
+	public uint GetSessionID()
+	{ return id; }
+
 	//--- Functions ---//
-	public void PostMessage( InputByteStream msg )
+	public void PostMessage( ref InputByteStream msg )
 	{
 		//--- Enqueue msg to send ---//
-		System.Console.WriteLine("PostMessage");
-		client.PostMessage( msg );
+		client.PostMessage( ref msg );
+	}
+
+	public void NotiWelcomeInfo( InputByteStream packet )
+	{
+		Header header = new Header(); header.Read( ref packet );
+
+		id = header.sessionID;
+		packet.flush();
 	}
 	
 }

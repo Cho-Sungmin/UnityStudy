@@ -15,13 +15,16 @@ public class InputByteStream
 
 	public InputByteStream( OutputByteStream obstream )
 	{
-		capacity = (UInt32)obstream.GetLength();
-		buffer = new byte[capacity];
-		Read( obstream.GetBuffer() , capacity );
-		obstream.flush();
+		//capacity = (UInt32)obstream.GetLength();
+		//buffer = new byte[capacity];
+
+		//System.Buffer.BlockCopy( obstream.GetBuffer() , 0 , buffer , 0 , (int)capacity );
+
+		capacity = (uint) obstream.GetLength();
+		buffer = obstream.GetBuffer();
 	}
 
-	public int GetRemainLength()
+	public int GetLength()
 	{	return (int)capacity - cursor;	}
 
 	public byte[] GetBuffer()
@@ -38,8 +41,6 @@ public class InputByteStream
 
 	public void Read( byte[] data , UInt32 size )
 	{
-		if( IsEmpty() )
-			return;
 		System.Buffer.BlockCopy( buffer , cursor , data , 0 , (int)size );
 		cursor += (int)size;
 	}
@@ -50,49 +51,43 @@ public class InputByteStream
 
 	public void Read( out UInt16 data )
 	{
-		if( IsEmpty() )
-		{
-			data = 0;
-			return;
-		}
 		data = System.BitConverter.ToUInt16( buffer , cursor );
 		cursor += sizeof(UInt16);
 	}
 
 	public void Read( out UInt32 data )
 	{
-		if( IsEmpty() )
-		{
-			data = 0;
-			return;
-		}
 		data = System.BitConverter.ToUInt32( buffer , cursor );
 		cursor += sizeof(UInt32);
 	}
-	public void Read( string data )
+	public void Read( out string data )
 	{
-		if( IsEmpty() )
-			return;
-
 		//--- Read length of string ---//
 		UInt32 len; 
 		Read( out len );
 
+		if( len < 1 )
+		{
+			data = "";
+			return;
+		}
+
 		//--- Read string ---//
-		data = System.BitConverter.ToString( buffer , cursor , (int)len );
+		data = System.Text.Encoding.Default.GetString( buffer , cursor , (int)len );
 
 		cursor += (int)len;
 	}
 
-	public bool IsEmpty()
-	{
-		return cursor == -1 ? true : false;
-	}
-
 	public void flush()
 	{
-		cursor = -1;
+		cursor = 0;
 	}
+
+	public uint GetCapacity()
+	{ return capacity; }
+
+	public int GetCursor()
+	{ return cursor; }
 }
 
 
@@ -110,10 +105,12 @@ public class OutputByteStream
 
 	public OutputByteStream( InputByteStream ibstream )
 	{
-		capacity = (UInt32)ibstream.GetRemainLength();
-		buffer = new byte[capacity];
-		Write( ibstream.GetBuffer() , (UInt32)ibstream.GetRemainLength() );
+		//capacity = (UInt32)ibstream.GetLength();
+		//buffer = new byte[capacity];
+		//Write( ibstream.GetBuffer() , (UInt32)ibstream.GetLength() );
 		ibstream.flush();
+		capacity = ibstream.GetCapacity();
+		buffer = ibstream.GetBuffer();
 	}
 
 	public int GetLength()
@@ -175,13 +172,14 @@ public class OutputByteStream
 		Write( dataBuffer , dataLen );
 	}
 
-	public bool IsFull()
-	{
-		return cursor == capacity ? true : false;
-	}
-
 	public void flush()
 	{
 		cursor = 0;
 	}
+
+	public uint GetCapacity()
+	{ return capacity; }
+
+	public int GetCursor()
+	{ return cursor; }
 }
