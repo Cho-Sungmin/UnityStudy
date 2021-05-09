@@ -60,13 +60,13 @@ public class LobbySession : Session
 
 		userInfo.Write( payload );
 
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + (UInt32)payload.GetLength() );
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + payload.GetLength() );
 
 		Header header = new Header();
 
-		header.type = (int) PACKET_TYPE.REQ;
-		header.func = (int) FUNCTION_CODE.REQ_ENTER_LOBBY;
-		header.len = ( UInt32 ) payload.GetLength();
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_ENTER_LOBBY;
+		header.len = payload.GetLength();
 		header.sessionID = GetSessionID();
 
 		header.Write( ref packet );
@@ -125,9 +125,9 @@ public class LobbySession : Session
 		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 		userInfo.Write( payload );
 	
-		header.type = (int) PACKET_TYPE.REQ;
-		header.func = (int) FUNCTION_CODE.REQ_ROOM_LIST;
-		header.len = ( UInt32 ) payload.GetLength();
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_ROOM_LIST;
+		header.len = payload.GetLength();
 		header.sessionID = GetSessionID();
 
 		OutputByteStream resPacket = new OutputByteStream( Header.SIZE + header.len );
@@ -178,9 +178,9 @@ public class LobbySession : Session
 	{
 		Header header = new Header();
 
-		header.type = (int) PACKET_TYPE.REQ;
-		header.func = (int) FUNCTION_CODE.REQ_MAKE_ROOM;
-		header.len = ( UInt32 ) roomInfoData.GetLength();
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_MAKE_ROOM;
+		header.len = roomInfoData.GetLength();
 		header.sessionID = 0;
 
 		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
@@ -203,7 +203,7 @@ public class LobbySession : Session
 
 		header.Read( ref packet );
 		
-		if( header.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
+		if( header.func == (ushort) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
         {
 			//--- Update information in game session  ---//
 

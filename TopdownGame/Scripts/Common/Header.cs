@@ -4,7 +4,7 @@ public struct Header
 {
 	public byte type;
 	public UInt16 func;
-	public UInt32 len;
+	public int len;
 	public UInt32 sessionID;
 
 	public const int SIZE = sizeof(byte) + sizeof(UInt16) + sizeof(UInt32) + sizeof(UInt32);
@@ -40,7 +40,7 @@ public struct Header
 
 }
 
-public enum PACKET_TYPE : byte
+enum PACKET_TYPE : byte
 {
 	HB = 0,
 	NOTI = 1,
@@ -49,9 +49,9 @@ public enum PACKET_TYPE : byte
 	MSG
 }
 
-public enum FUNCTION_CODE : UInt16
-{
-	//--- Function map keys ---//
+enum FUNCTION_CODE : UInt16 {
+
+	//--- Request ---//
 	REQ_VERIFY = 0,
 	REQ_SIGN_IN,
 	REQ_MAKE_ROOM,
@@ -59,7 +59,7 @@ public enum FUNCTION_CODE : UInt16
 	REQ_ROOM_LIST,
 	REQ_JOIN_GAME,
 
-		
+	//--- Response ---//
 	RES_VERIFY_SUCCESS,
 	RES_SIGN_IN_SUCCESS,
 	RES_MAKE_ROOM_SUCCESS,
@@ -72,11 +72,16 @@ public enum FUNCTION_CODE : UInt16
 	RES_ENTER_LOBBY_FAIL,
 	RES_ROOM_LIST_FAIL,
 	RES_JOIN_GAME_FAIL,
+
+	//--- Others ---//
 	WELCOME,
+	REPLICATION,
 	SUCCESS,
 	FAIL,
 	REJECT,
 	EXIT, 
 	ANY,
-	NONE
-}
+	NONE,
+
+	MAX_CODE
+};

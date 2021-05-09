@@ -46,7 +46,7 @@ public class LoginSession : Session
 
 		bool result = false;
 
-		if( header.func == (int) FUNCTION_CODE.RES_VERIFY_SUCCESS )
+		if( header.func == (ushort) FUNCTION_CODE.RES_VERIFY_SUCCESS )
 		{
 			result = true;
 			userInfo.Read( packet );

@@ -3,7 +3,7 @@
 
 public class Room
 {
-	public string m_id;
+	public string m_roomId;
 	public UInt32 m_capacity { get; set; }
 	public UInt32 m_presentMembers { get; set; }
 
@@ -14,7 +14,7 @@ public class Room
 
 	public void Write( OutputByteStream stream )
 	{
-		stream.Write( m_id );
+		stream.Write( m_roomId );
 		stream.Write( (UInt32)m_capacity );
 		stream.Write( (UInt32)m_presentMembers );
 		stream.Write( m_title );
@@ -24,7 +24,7 @@ public class Room
 	{
 		UInt32 tmp;
 
-		stream.Read( out m_id );
+		stream.Read( out m_roomId );
 		stream.Read( out tmp );
 		m_capacity = tmp;
 		stream.Read( out tmp );

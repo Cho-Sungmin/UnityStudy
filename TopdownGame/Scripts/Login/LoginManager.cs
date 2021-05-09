@@ -43,7 +43,7 @@ public class LoginManager : MonoBehaviour
 		userInfo.m_pw = pw_input.text;
 
 		//--- Set payload of packet ---//
-		OutputByteStream payload = new OutputByteStream( (UInt32)TCP.TCP.MAX_PAYLOAD_SIZE );
+		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 		userInfo.Write( payload );
 
 		//--- Set header of packet ---//
@@ -51,10 +51,10 @@ public class LoginManager : MonoBehaviour
 		
 		header.type = (byte) PACKET_TYPE.REQ;
 		header.func = (UInt16) FUNCTION_CODE.REQ_VERIFY;
-		header.len = (UInt32) payload.GetLength();
+		header.len = payload.GetLength();
 		header.sessionID = loginSession.GetSessionID();
 
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + (UInt32)payload.GetLength() );
+		OutputByteStream packet = new OutputByteStream( Header.SIZE + payload.GetLength() );
 		header.Write( ref packet );
 		packet.Write( payload.GetBuffer() , header.len );
 

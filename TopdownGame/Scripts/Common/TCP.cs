@@ -44,7 +44,7 @@ namespace TCP {
 		{
 			int len = 0;
 			int head_len = Header.SIZE;
-			InputByteStream head = new InputByteStream( (uint)head_len );
+			InputByteStream head = new InputByteStream( head_len );
 			byte[] headerToRecv = head.GetBuffer();
 			
 			//--- Receive header ---//
@@ -61,7 +61,7 @@ namespace TCP {
 			header.Read( ref head );
 
 			int body_len = (int)header.len;
-			OutputByteStream obstream = new OutputByteStream( Header.SIZE + (uint)body_len );
+			OutputByteStream obstream = new OutputByteStream( Header.SIZE + body_len );
 			header.Write( ref obstream );
 
 			byte[] payloadToRecv = new byte[body_len];
@@ -72,7 +72,7 @@ namespace TCP {
 				body_len -= len;
 			}
 
-			obstream.Write( payloadToRecv , (uint)payloadToRecv.Length );
+			obstream.Write( payloadToRecv , payloadToRecv.Length );
 			packet = new InputByteStream( obstream );
 
 			if( body_len != 0 )

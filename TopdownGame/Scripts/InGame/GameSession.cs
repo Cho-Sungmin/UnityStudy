@@ -26,13 +26,10 @@ public class GameSession : Session
 		client.Init();
 
 		//--- Register handler ---//
-		client.RegisterHandler( (int) FUNCTION_CODE.WELCOME , NotiWelcomeInfo );
+		client.RegisterHandler( (int) FUNCTION_CODE.WELCOME , RequestJoinGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS , ResponseJoinGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_FAIL , ResponseJoinGame );
 		
-
-		//--- Request to play game ---//
-		//RequestJoinGame();
 	}
 
 	public void SetRoomInfo( Room info )
@@ -40,29 +37,31 @@ public class GameSession : Session
 		roomInfo = info;
 	}
 
-	public void RequestJoinGame()
+	public void RequestJoinGame( InputByteStream packet )
 	{
-		Header header = new Header();
-
-		header.type = (int) PACKET_TYPE.REQ;
-		header.func = (int) FUNCTION_CODE.REQ_JOIN_GAME;
-		header.len = 0;
-		header.sessionID = 0;
+		NotiWelcomeInfo( packet );
 
 		if( roomInfo == null )
 			return ;
 
 		//--- Set data with room_id and user_id ---//
+		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		payload.Write( roomInfo.m_roomId );
+		payload.Write( userInfo.m_id );
 
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
+		Header header = new Header();
 
-		header.Write( ref packet );
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (ushort) FUNCTION_CODE.REQ_JOIN_GAME;
+		header.len = payload.GetLength();
+		header.sessionID = GetSessionID();
 
-		string room_id = "" + roomInfo.m_id;
-		packet.Write( room_id );
-		packet.Write( userInfo.m_id );
+		OutputByteStream reqPacket = new OutputByteStream( Header.SIZE + header.len );
 
-		client.Send( new InputByteStream( packet ) );
+		header.Write( ref reqPacket );
+		reqPacket.Write( payload.GetBuffer() , header.len );
+
+		client.Send( new InputByteStream( reqPacket ) );
 	}
 
 	void ResponseJoinGame( InputByteStream packet )
@@ -70,15 +69,12 @@ public class GameSession : Session
 		Header header = new Header();
 
 		header.Read( ref packet );
+		roomInfo.Read( packet );
 
-		if( header.func == (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS )
+		if( header.func == (ushort) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS )
 		{
 			roomManager.LoadRoom( roomInfo );
 		}
-		//else( packet.head.func == (int) FUNCTION_CODE.RES_JOIN_GAME_FAIL )
-		//{
-		
-		//}
 	}
 
 }

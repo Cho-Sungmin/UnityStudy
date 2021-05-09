@@ -4,10 +4,10 @@
 public class InputByteStream
 {
 	int cursor = 0;
-	UInt32 capacity;
+	int capacity;
 	byte[] buffer;
 
-	public InputByteStream( UInt32 maxBufSize )
+	public InputByteStream( int maxBufSize )
 	{
 		capacity = maxBufSize;
 		buffer = new byte[capacity];
@@ -20,17 +20,17 @@ public class InputByteStream
 
 		//System.Buffer.BlockCopy( obstream.GetBuffer() , 0 , buffer , 0 , (int)capacity );
 
-		capacity = (uint) obstream.GetLength();
+		capacity = obstream.GetLength();
 		buffer = obstream.GetBuffer();
 	}
 
 	public int GetLength()
-	{	return (int)capacity - cursor;	}
+	{	return capacity - cursor;	}
 
 	public byte[] GetBuffer()
 	{	return buffer;	}
 
-	void ReallocBuffer( UInt32 newSize )
+	void ReallocBuffer( int newSize )
 	{
 		byte[] tmp = new byte[newSize];
 
@@ -39,10 +39,10 @@ public class InputByteStream
 		buffer = tmp;
 	}
 
-	public void Read( byte[] data , UInt32 size )
+	public void Read( byte[] data , int size )
 	{
-		System.Buffer.BlockCopy( buffer , cursor , data , 0 , (int)size );
-		cursor += (int)size;
+		System.Buffer.BlockCopy( buffer , cursor , data , 0 , size );
+		cursor += size;
 	}
 	public void Read( out byte data )
 	{
@@ -60,10 +60,18 @@ public class InputByteStream
 		data = System.BitConverter.ToUInt32( buffer , cursor );
 		cursor += sizeof(UInt32);
 	}
+
+	public void Read( out int data )
+	{
+		data = System.BitConverter.ToInt32( buffer , cursor );
+		cursor += sizeof(UInt32);
+	}
+
 	public void Read( out string data )
 	{
 		//--- Read length of string ---//
-		UInt32 len; 
+		int len; 
+
 		Read( out len );
 
 		if( len < 1 )
@@ -73,9 +81,9 @@ public class InputByteStream
 		}
 
 		//--- Read string ---//
-		data = System.Text.Encoding.Default.GetString( buffer , cursor , (int)len );
+		data = System.Text.Encoding.Default.GetString( buffer , cursor , len );
 
-		cursor += (int)len;
+		cursor += len;
 	}
 
 	public void flush()
@@ -83,7 +91,7 @@ public class InputByteStream
 		cursor = 0;
 	}
 
-	public uint GetCapacity()
+	public int GetCapacity()
 	{ return capacity; }
 
 	public int GetCursor()
@@ -94,10 +102,10 @@ public class InputByteStream
 public class OutputByteStream
 {
 	int cursor = 0;
-	UInt32 capacity;
+	int capacity;
 	byte[] buffer;
 
-	public OutputByteStream( UInt32 maxBufSize )
+	public OutputByteStream( int maxBufSize )
 	{
 		capacity = maxBufSize;
 		buffer = new byte[capacity];
@@ -119,7 +127,7 @@ public class OutputByteStream
 	public byte[] GetBuffer()
 	{	return buffer;	}
 
-	void ReallocBuffer( UInt32 newSize )
+	void ReallocBuffer( int newSize )
 	{
 		byte[] tmp = new byte[newSize];
 
@@ -128,20 +136,20 @@ public class OutputByteStream
 		buffer = tmp;
 	}
 
-	public void Write( byte[] data , UInt32 size )
+	public void Write( byte[] data , int size )
 	{
-		UInt32 dataLen = size;
+		int dataLen = size;
 
 		if( dataLen > capacity - cursor )
 		{
-			UInt32 newCapacity = Math.Max( dataLen , 2 * capacity );
+			int newCapacity = Math.Max( dataLen , 2 * capacity );
 
 			ReallocBuffer( newCapacity );
 		}
 
-		System.Buffer.BlockCopy( data , 0 , buffer , cursor , (int)dataLen );
+		System.Buffer.BlockCopy( data , 0 , buffer , cursor , dataLen );
 
-		cursor += (int)dataLen;
+		cursor += dataLen;
 	}
 
 	public void Write( byte data )
@@ -153,20 +161,27 @@ public class OutputByteStream
 	{
 		byte[] dataBuffer = System.BitConverter.GetBytes( data );
 
-		Write( dataBuffer , (UInt32)dataBuffer.Length );
+		Write( dataBuffer , dataBuffer.Length );
 	}
 
 	public void Write( UInt32 data )
 	{
 		byte[] dataBuffer = System.BitConverter.GetBytes( data );
 
-		Write( dataBuffer , (UInt32)dataBuffer.Length );
+		Write( dataBuffer , dataBuffer.Length );
+	}
+
+	public void Write( int data )
+	{
+		byte[] dataBuffer = System.BitConverter.GetBytes( data );
+
+		Write( dataBuffer , dataBuffer.Length );
 	}
 
 	public void Write( string data )
 	{
 		byte[] dataBuffer = System.Text.Encoding.Default.GetBytes( data );
-		UInt32 dataLen = (UInt32)dataBuffer.Length;
+		int dataLen = dataBuffer.Length;
 
 		Write( dataLen );
 		Write( dataBuffer , dataLen );
@@ -177,7 +192,7 @@ public class OutputByteStream
 		cursor = 0;
 	}
 
-	public uint GetCapacity()
+	public int GetCapacity()
 	{ return capacity; }
 
 	public int GetCursor()
