@@ -30,7 +30,7 @@ public class RoomMaker : MonoBehaviour
         Room roomInfo = new Room();
         
         roomInfo.m_capacity = System.UInt32.Parse( capacityBox.options[capacityBox.value].text );
-        roomInfo.m_roomId = "0";
+        roomInfo.m_roomId = System.DateTime.Now.ToString("yyMMddhhmmss");
         roomInfo.m_presentMembers = 0;
         roomInfo.m_title = titleInput.text;
 
@@ -41,11 +41,4 @@ public class RoomMaker : MonoBehaviour
 
         lobbySession.RequestMakeRoom( new InputByteStream( packet ) );
     }
-
-    private void OnDestroy()
-	{
-        if( lobbySession.IsOpen() )
-		    lobbySession.CloseSession();
-	}
- 
 }

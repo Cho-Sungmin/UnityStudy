@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -67,18 +67,13 @@ public class RoomManager : MonoBehaviour
 
 	private void MakeRoom()
 	{
-		SceneManager.LoadScene("MakeRoom" , LoadSceneMode.Single);
-	}
-
-	public void LoadRoom( Room roomInfo )
-	{
-		SceneManager.LoadScene("InGame" , LoadSceneMode.Single);
+		SceneManager.LoadScene("MakeRoom" , LoadSceneMode.Additive);
 	}
 
 	public void JoinRoom( int roomNo )
 	{
 		Room roomInfo = GetRoomInfo( roomNo );
-		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession( this );
+		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
 
 		gameSession.SetRoomInfo( roomInfo );
 

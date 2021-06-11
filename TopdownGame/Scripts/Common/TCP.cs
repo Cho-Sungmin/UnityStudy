@@ -8,76 +8,147 @@ namespace TCP {
 		public static void SendPacket( Socket socket , InputByteStream packet )
 		{
 			int len = 0;
+			int offset = 0;
 			int head_len = Header.SIZE;
-			byte[] dataToSend = packet.GetBuffer();
+
+			byte[] bufferToSend = new byte[head_len];
+			packet.Read( bufferToSend , head_len );
 
 			//--- Send header ---//
 			while( head_len > 0 )
 			{
-				len = socket.Send( dataToSend , len , head_len , SocketFlags.None );
-				head_len -= len;
+				try{
+					len = socket.Send( bufferToSend , offset , head_len , SocketFlags.None );
+					head_len -= len;
+					offset += len;
+				}
+				catch( SocketException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
+				catch( System.ObjectDisposedException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
 			}
 
 			if( head_len != 0 )
+			{
+				LOG.printLog( "TCP" , "ERROR" , "Data dropped" );
 				throw new SocketException(); 
+			}
 
-				Header header = new Header();
-				header.Read( ref packet );
+			packet.ReUse();
+			Header header = new Header();
+			header.Read( ref packet );
 
 			len = 0;
-			int body_len = (int) header.len;
+			offset = 0;
+			int body_len = header.len;
+
+			bufferToSend = new byte[body_len];
+			packet.Read( bufferToSend , body_len );
 
 			//--- Send payload ---//
 			while( body_len > 0 )
 			{
-				len = socket.Send( dataToSend , Header.SIZE + len , body_len , SocketFlags.None );
-				body_len -= len;
+				try{
+					len = socket.Send( bufferToSend , offset , body_len , SocketFlags.None );
+					body_len -= len;
+					offset += len;
+				}
+				catch( SocketException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
+				catch( System.ObjectDisposedException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
 			}
 
-			packet.flush();
-
 			if( body_len != 0 )
-				throw new SocketException();
+			{
+				LOG.printLog( "TCP" , "ERROR" , "Data dropped" );
+				throw new SocketException(); 
+			}
 		}
 
-		public static void RecvPacket( Socket socket , out InputByteStream packet )
+		public static void RecvPacket( Socket socket , OutputByteStream packet )
 		{
 			int len = 0;
+			int offset = 0;
 			int head_len = Header.SIZE;
-			InputByteStream head = new InputByteStream( head_len );
-			byte[] headerToRecv = head.GetBuffer();
+			byte[] bufferToRecv = new byte[head_len];
 			
 			//--- Receive header ---//
-			do{
-				len = socket.Receive( headerToRecv , len , head_len , SocketFlags.None );
-				head_len -= len;
-			}while( head_len > 0 );
-
-			if( head_len != 0 )
-				throw new SocketException();
-
-			len = 0;
-			Header header = new Header();
-			header.Read( ref head );
-
-			int body_len = (int)header.len;
-			OutputByteStream obstream = new OutputByteStream( Header.SIZE + body_len );
-			header.Write( ref obstream );
-
-			byte[] payloadToRecv = new byte[body_len];
-
-			//--- Receive payload ---//
-			while( body_len > 0 ){
-				len = socket.Receive( payloadToRecv , len , body_len , SocketFlags.None );
-				body_len -= len;
+			while( head_len > 0 )
+			{
+				try{
+					len = socket.Receive( bufferToRecv , offset , head_len , SocketFlags.None );
+					head_len -= len;
+					offset += len;
+				}
+				catch( SocketException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
+				catch( System.ObjectDisposedException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
 			}
 
-			obstream.Write( payloadToRecv , payloadToRecv.Length );
-			packet = new InputByteStream( obstream );
+			if( head_len != 0 )
+			{
+				LOG.printLog( "TCP" , "ERROR" , "Data dropped" );
+				throw new SocketException(); 
+			}
+			else
+				packet.Write( bufferToRecv , Header.SIZE );
+
+			InputByteStream ibstream = new InputByteStream( packet );
+			Header header = new Header();
+			header.Read( ref ibstream );
+
+			len = 0;
+			offset = 0;
+			int body_len = header.len;
+			bufferToRecv = new byte[body_len];
+
+			//--- Receive payload ---//
+			while( body_len > 0 )
+			{
+				try{
+					len = socket.Receive( bufferToRecv , offset , body_len , SocketFlags.None );
+					body_len -= len;
+					offset += len;
+				}
+				catch( SocketException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
+				catch( System.ObjectDisposedException e )
+				{
+					LOG.printLog( "TCP" , "ERROR" , e.Message );
+					throw e;
+				}
+			}
 
 			if( body_len != 0 )
-				throw new SocketException();
-			
+			{
+				LOG.printLog( "TCP" , "ERROR" , "Data dropped" );
+				throw new SocketException(); 
+			}
+			else
+				packet.Write( bufferToRecv , header.len );
 		}
 	}
 }

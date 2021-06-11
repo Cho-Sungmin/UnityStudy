@@ -7,7 +7,7 @@ public struct Header
 	public int len;
 	public UInt32 sessionID;
 
-	public const int SIZE = sizeof(byte) + sizeof(UInt16) + sizeof(UInt32) + sizeof(UInt32);
+	public const int SIZE = sizeof(byte) + sizeof(UInt16) + sizeof(int) + sizeof(UInt32);
 
 	public void Read( ref InputByteStream stream )
 	{
@@ -35,7 +35,7 @@ public struct Header
 
 	public void Display()
 	{
-		System.Console.WriteLine("[" + type + "] " + "[" + func + "] " + "[" + len + "] " + "[" + sessionID + "]\n");			
+		UnityEngine.Debug.Log("[" + type + "] " + "[" + func + "] " + "[" + len + "] " + "[" + sessionID + "]\n");			
 	}
 
 }
@@ -58,6 +58,7 @@ enum FUNCTION_CODE : UInt16 {
 	REQ_ENTER_LOBBY,
 	REQ_ROOM_LIST,
 	REQ_JOIN_GAME,
+	REQ_REPLICATION,
 
 	//--- Response ---//
 	RES_VERIFY_SUCCESS,
@@ -74,8 +75,8 @@ enum FUNCTION_CODE : UInt16 {
 	RES_JOIN_GAME_FAIL,
 
 	//--- Others ---//
-	WELCOME,
-	REPLICATION,
+	NOTI_WELCOME,
+	NOTI_REPLICATION,
 	SUCCESS,
 	FAIL,
 	REJECT,
@@ -85,3 +86,4 @@ enum FUNCTION_CODE : UInt16 {
 
 	MAX_CODE
 };
+

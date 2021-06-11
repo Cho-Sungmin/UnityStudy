@@ -18,7 +18,6 @@ public class LoginManager : MonoBehaviour
 
 	private void Awake()
 	{
-
 		Transform logInPanel = transform.GetChild(0);
 
 		id_input = logInPanel.GetChild(0).GetChild(1).GetComponent<InputField>();
@@ -31,7 +30,7 @@ public class LoginManager : MonoBehaviour
 
 	private void Start()
 	{
-		loginSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLoginSession( this );
+		loginSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLoginSession();
 		loginSession.OpenSession();
 		bt_sign.onClick.AddListener( RequstSignIn );
 	}
@@ -54,7 +53,7 @@ public class LoginManager : MonoBehaviour
 		header.len = payload.GetLength();
 		header.sessionID = loginSession.GetSessionID();
 
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + payload.GetLength() );
+		OutputByteStream packet = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 		header.Write( ref packet );
 		packet.Write( payload.GetBuffer() , header.len );
 
@@ -62,25 +61,6 @@ public class LoginManager : MonoBehaviour
 
 		// Post REQ_MSG to msg_queue
 		loginSession.PostMessage( ref ibstream );
-		
-	}
-
-	public void OnSignIn( bool result )
-	{
-		if( result )
-		{
-			loginSession.userInfo.m_id = userInfo.m_id;
-			loginSession.userInfo.m_pw = userInfo.m_pw;
-			loginSession.userInfo.m_name = userInfo.m_name;
-			loginSession.userInfo.m_age = userInfo.m_age;
-			
-			SceneManager.LoadScene( "LoadingLobby" , LoadSceneMode.Single );
-			Debug.Log("로그인 성공!!!");
-		}
-		else
-		{
-			Debug.Log("로그인 실패!!!");
-		}
 	}
 
 	private void OnDestroy()

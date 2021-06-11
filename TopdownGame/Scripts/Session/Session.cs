@@ -16,6 +16,11 @@ public class Session
 		//messageThread = new Thread( Run );
 	}
 
+	~Session()
+	{
+		LOG.printLog( "DEBUG" , "MEMORY" , "~Session()" );
+		CloseSession();
+	}
 	public virtual void Init()
 	{
 		client.Init();
@@ -66,7 +71,11 @@ public class Session
 		Header header = new Header(); header.Read( ref packet );
 
 		id = header.sessionID;
-		packet.flush();
+	}
+
+	public void Heartbeat( InputByteStream packet )
+	{
+		client.Send( packet );
 	}
 	
 }

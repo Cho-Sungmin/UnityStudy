@@ -7,13 +7,19 @@ public class MainCamera : MonoBehaviour
 	GameObject player;
 	Vector3 zVec = new Vector3(0,0,-1);
 
-	private void Awake()
+	public void SetPlayerComponent()
 	{
 		player = GameObject.Find("Player");
 	}
 
+	private void Awake()
+	{
+		SetPlayerComponent();
+	}
+
 	private void FixedUpdate()
 	{
-		transform.position = player.transform.position + zVec;
+		if( player != null )
+			transform.position = player.transform.position + zVec;
 	}
 }

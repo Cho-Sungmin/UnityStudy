@@ -14,6 +14,11 @@ public class GameManagerScript : MonoBehaviour
 
 	private void Awake()
 	{
+		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
+		GameObjectInfo playerObject = gameSession.gameObjectManager.GetPlayerObject();
+		UnityEngine.GameObject player = GameObjectInstantiator.InstantiateObject( playerObject , gameSession.gameObjectManager.GetObjectId( playerObject ) );
+		player.AddComponent<PlayerScript>();
+
 		talkPanel = gameObject.transform.GetChild(0).GetComponent<Image>();
 
 		talkLine = talkPanel.transform.GetChild(0).GetComponent<Text>();
@@ -23,6 +28,7 @@ public class GameManagerScript : MonoBehaviour
 		SetOnTalkPanel(false);
 		
 	}
+
 	public void Interaction( GameObject npc )
     {
 		int id = npc.GetComponent<ObjectInfo>().id;
@@ -41,10 +47,9 @@ public class GameManagerScript : MonoBehaviour
 				
 		}
 		catch( System.IndexOutOfRangeException e) {
-			Debug.Log( e.Message );
 			talkLine.text = "";
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite ); 
 		}
-		
 
 		if( talkLine.text != "" )
 		{
@@ -66,5 +71,10 @@ public class GameManagerScript : MonoBehaviour
 		talkCursor.enabled = value;
 		talkLine.enabled = value;
 		talkPanel.enabled = value;
+	}
+
+	private void OnDestroy()
+	{
+		LOG.printLog( "DEBUG" , "MEMORY" , "OnDestroy() : GameManagerScript" );
 	}
 }

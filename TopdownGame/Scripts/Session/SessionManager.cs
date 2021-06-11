@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿
 using UnityEngine;
 
 public class SessionManager : MonoBehaviour
@@ -42,21 +41,14 @@ public class SessionManager : MonoBehaviour
 			gameSession.client.DispatchMessages();
 	}
 
-	public LoginSession GetLoginSession( LoginManager mgr )
+	public LoginSession GetLoginSession()
 	{
 		if( loginSession != null )
-			return loginSession.GetInstance( mgr );
+			return loginSession.GetInstance();
 		else
 			return null;
 	}
 
-	public LobbySession GetLobbySession( LoadingLobby mgr )
-	{
-		if( lobbySession != null )
-			return lobbySession.GetInstance( mgr );
-		else
-			return null;
-	}
 	public LobbySession GetLobbySession( RoomManager mgr )
 	{
 		if( lobbySession != null )
@@ -73,13 +65,6 @@ public class SessionManager : MonoBehaviour
 			return null;
 	}
 
-	public GameSession GetGameSession( RoomManager mgr )
-	{
-		if( gameSession != null )
-			return gameSession.GetInstance( mgr );
-		else
-			return null;
-	}
 	public GameSession GetGameSession()
 	{
 		if( gameSession != null )

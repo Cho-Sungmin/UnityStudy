@@ -15,56 +15,81 @@ public class InputByteStream
 
 	public InputByteStream( OutputByteStream obstream )
 	{
-		//capacity = (UInt32)obstream.GetLength();
-		//buffer = new byte[capacity];
-
-		//System.Buffer.BlockCopy( obstream.GetBuffer() , 0 , buffer , 0 , (int)capacity );
-
 		capacity = obstream.GetLength();
-		buffer = obstream.GetBuffer();
+		buffer = new byte[capacity];
+		System.Buffer.BlockCopy( obstream.GetBuffer() , 0 , buffer , 0 , capacity );
 	}
 
-	public int GetLength()
-	{	return capacity - cursor;	}
+	public int GetRemainLength()
+	{ return capacity - cursor; }
 
 	public byte[] GetBuffer()
-	{	return buffer;	}
-
-	void ReallocBuffer( int newSize )
-	{
-		byte[] tmp = new byte[newSize];
-
-		System.Buffer.BlockCopy( buffer , 0 , tmp , 0 , cursor );
-		capacity = newSize;
-		buffer = tmp;
-	}
+	{ return buffer; }
 
 	public void Read( byte[] data , int size )
 	{
+		if( IsEmpty() )
+			return;
+
 		System.Buffer.BlockCopy( buffer , cursor , data , 0 , size );
 		cursor += size;
 	}
 	public void Read( out byte data )
 	{
+		if( IsEmpty() )
+		{
+			data = 0;
+			return;
+		}
+
 		data = buffer[cursor++];
 	}
 
 	public void Read( out UInt16 data )
 	{
+		if( IsEmpty() )
+		{
+			data = 0;
+			return;
+		}
+
 		data = System.BitConverter.ToUInt16( buffer , cursor );
 		cursor += sizeof(UInt16);
 	}
 
 	public void Read( out UInt32 data )
 	{
+		if( IsEmpty() )
+		{
+			data = 0;
+			return;
+		}
+
 		data = System.BitConverter.ToUInt32( buffer , cursor );
 		cursor += sizeof(UInt32);
 	}
 
 	public void Read( out int data )
 	{
+		if( IsEmpty() )
+		{
+			data = 0;
+			return;
+		}
+
 		data = System.BitConverter.ToInt32( buffer , cursor );
-		cursor += sizeof(UInt32);
+		cursor += sizeof(int);
+	}
+	public void Read( out float data )
+	{
+		if( IsEmpty() )
+		{
+			data = 0;
+			return;
+		}
+
+		data = System.BitConverter.ToSingle( buffer , cursor );
+		cursor += sizeof(float);
 	}
 
 	public void Read( out string data )
@@ -86,7 +111,7 @@ public class InputByteStream
 		cursor += len;
 	}
 
-	public void flush()
+	public void ReUse()
 	{
 		cursor = 0;
 	}
@@ -96,6 +121,9 @@ public class InputByteStream
 
 	public int GetCursor()
 	{ return cursor; }
+
+	public bool IsEmpty() 
+	{ return GetRemainLength() > 0 ? false : true; }
 }
 
 
@@ -113,12 +141,9 @@ public class OutputByteStream
 
 	public OutputByteStream( InputByteStream ibstream )
 	{
-		//capacity = (UInt32)ibstream.GetLength();
-		//buffer = new byte[capacity];
-		//Write( ibstream.GetBuffer() , (UInt32)ibstream.GetLength() );
-		ibstream.flush();
 		capacity = ibstream.GetCapacity();
-		buffer = ibstream.GetBuffer();
+		buffer = new byte[TCP.TCP.MAX_PAYLOAD_SIZE];
+		System.Buffer.BlockCopy( ibstream.GetBuffer() , 0 , buffer , 0 , capacity );
 	}
 
 	public int GetLength()
@@ -178,6 +203,13 @@ public class OutputByteStream
 		Write( dataBuffer , dataBuffer.Length );
 	}
 
+	public void Write( float data )
+	{
+		byte[] dataBuffer = System.BitConverter.GetBytes( data );
+
+		Write( dataBuffer , dataBuffer.Length );
+	}
+
 	public void Write( string data )
 	{
 		byte[] dataBuffer = System.Text.Encoding.Default.GetBytes( data );
@@ -187,7 +219,7 @@ public class OutputByteStream
 		Write( dataBuffer , dataLen );
 	}
 
-	public void flush()
+	public void Flush()
 	{
 		cursor = 0;
 	}
@@ -197,4 +229,5 @@ public class OutputByteStream
 
 	public int GetCursor()
 	{ return cursor; }
+
 }

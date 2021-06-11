@@ -22,7 +22,6 @@ namespace Client {
 
 		public virtual void Init()
 		{
-
 			//--- Init socket ---//
 			m_serverSock = new Socket( AddressFamily.InterNetwork , SocketType.Stream , ProtocolType.Tcp );
 			m_serverAddr = IPAddress.Parse("192.168.0.6");
@@ -40,8 +39,6 @@ namespace Client {
 
 			//--- Register handlers in this class ---//
 			m_handlerMap = new Dictionary<int, System.Action<InputByteStream>>();
-
-		
 		}
 
 	
@@ -62,11 +59,11 @@ namespace Client {
 		{
 			try {
 				m_serverSock.Connect( m_serverAddr , port );
-				System.Console.Write( "서버 연결 성공!!!" );
+				LOG.printLog( "TCP" , "OK" , "Connect()" );
 			}
 			catch( System.Exception e )
 			{
-				System.Console.Write( e.Message );
+				UnityEngine.Debug.LogException( e );
 				throw e;
 			}
 		}
@@ -74,22 +71,24 @@ namespace Client {
 		public void Disconnect()
 		{
 			m_threadFlag = false;
+
 			if( m_serverSock.Connected )
 				m_serverSock.Disconnect(false);
+
+			LOG.printLog( "TCP" , "NOTI" , "Disconnect()" );
 		}
 
 		//--- Functions ---//
 		public void PostMessage( ref InputByteStream msg )
 		{
 			//--- Enqueue msg to send ---//
-			System.Console.WriteLine("PostMessage");
 			m_sendQueue.Enqueue( msg );
 		}
 		void ProcessMessage( ref InputByteStream msg )
 		{
 			Header header = new Header();
 			header.Read( ref msg );
-			msg.flush();
+			msg.ReUse();
 
 			//--- Process messages fetched ---//
 			if( m_handlerMap.ContainsKey(header.func) )
@@ -105,6 +104,7 @@ namespace Client {
 					ProcessMessage( ref packet );
 			}
 		}
+		
 
 		void DispatchToRecv()
 		{
@@ -125,20 +125,20 @@ namespace Client {
 
 		void RecvProcedure()
 		{
-			System.Console.WriteLine("Start RecvProcedure()");
-			InputByteStream ibstream;
+			OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 
 			while( m_threadFlag )
 			{
+				obstream.Flush();
+
 				//--- Receive messages and enqueue data ---//
 				try {
-					Recv( out ibstream );
-					m_recvQueue.Enqueue( ibstream );
-					//ibstream.DisplayPacket();
+					Recv( obstream );
+					m_recvQueue.Enqueue( new InputByteStream(obstream) );
 				}
 				catch( System.Net.Sockets.SocketException e )
 				{
-					System.Console.WriteLine( e.Message + " in Function '" + e.TargetSite + "'");
+					UnityEngine.Debug.LogException( e );
 				}
 
 			}
@@ -146,12 +146,27 @@ namespace Client {
 
 		public void Send( InputByteStream packet )
 		{
-			TCP.TCP.SendPacket( m_serverSock , packet );
+			try{
+				TCP.TCP.SendPacket( m_serverSock , packet );
+				LOG.printLog( packet , LOG.TYPE.SEND );
+			}
+			catch( SocketException e )
+			{
+				Disconnect();
+			}
 		}
 
-		public void Recv( out InputByteStream packet )
+		public void Recv( OutputByteStream packet )
 		{
-			TCP.TCP.RecvPacket( m_serverSock , out packet );
+			try{
+				TCP.TCP.RecvPacket( m_serverSock , packet );
+				InputByteStream ibstream = new InputByteStream( packet );
+				LOG.printLog( ibstream , LOG.TYPE.RECV );
+			}
+			catch( SocketException e )
+			{
+				Disconnect();
+			}
 		}
 
 	}
