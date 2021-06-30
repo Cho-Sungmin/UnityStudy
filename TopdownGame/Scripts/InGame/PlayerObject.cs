@@ -7,6 +7,7 @@ public class PlayerObject : GameObjectInfo
 
     public Vector2 position;
     public Vector2 velocity;
+    public int direction;
 
     public PlayerObject()
     {
@@ -36,6 +37,11 @@ public class PlayerObject : GameObjectInfo
         ibstream.Read( out y );
         velocity.x = x;
         velocity.y = y;
+
+        int dir;
+
+        ibstream.Read( out dir );
+        direction = dir;
         
     }
     override public void Write( OutputByteStream obstream )
@@ -46,5 +52,6 @@ public class PlayerObject : GameObjectInfo
         obstream.Write( velocity.x );
         obstream.Write( velocity.y );
     
+        obstream.Write( direction );
     }
 }

@@ -85,14 +85,12 @@ public class PlayerScript : MonoBehaviour
 			}			
 				
 			SetDirection( newDirection );
-
-			//transform.Translate( new Vector2( x, y ) );
-			//rigid.velocity = new Vector2( 3*x , 3*y );
 			player.velocity = new Vector2( 3*x , 3*y );
 		}
 
 		rigid.velocity = player.velocity;
 		player.position = rigid.position;
+		player.direction = direction;
 
 		OutputByteStream objectStream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 		objectStream.Write( (byte) ReplicationAction.UPDATE );

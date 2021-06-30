@@ -33,6 +33,21 @@ public class GameObjectManager
         
         return result;
     }
+    public List<uint> GetGameObjectIdAll()
+    {
+        GameObjectInfo result;
+
+        Dictionary<uint,GameObjectInfo>.KeyCollection keys = objectTable.Keys;
+
+        List<uint> results = new List<uint>();
+
+        foreach( uint key in keys )
+        {
+            results.Add(key);
+        }
+        
+        return results;
+    }
 
     public GameObjectInfo GetPlayerObject()
     {
@@ -41,6 +56,11 @@ public class GameObjectManager
         objectTable.TryGetValue( playerObjectId , out result );
         
         return result;
+    }
+
+     public uint GetPlayerObjectId()
+    {   
+        return playerObjectId;
     }
 
     public void AddGameObject( GameObjectInfo obj , uint objectId )
@@ -63,4 +83,14 @@ public class GameObjectManager
 
     public void SetPlayerObject( uint pId )
     { playerObjectId = pId; }
+
+    public void DestroyAllGameObject()
+    {
+        List<uint> objs = GetGameObjectIdAll();
+
+        foreach( uint id in objs )
+        {
+            RemoveGameObject( objectTable[id] );
+        }
+    }
 }

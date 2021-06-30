@@ -36,7 +36,7 @@ public class ReplicationManager
 		ReplicationHeader header = new ReplicationHeader( ReplicationAction.DESTROY , objectId , 0 );
 
 		header.Write( obstream );
-		obj.Write( obstream );
+		//obj.Write( obstream );
 	}
 
 	public void Replicate( InputByteStream ibstream )
@@ -50,6 +50,8 @@ public class ReplicationManager
 		if( action == ReplicationAction.CREATE )
 		{
 			obj = ObjectCreationRegistry.GetInstance().CreateObject( header.classId );
+			if( obj == null )
+				return ;
 			gameObjectManager.AddGameObject( obj , header.objectId );
 			obj.Read( ibstream );
 			GameObjectInstantiator.InstantiateObject( obj , gameObjectManager.GetObjectId( obj ) );
