@@ -50,6 +50,7 @@ public class LoginSession : Session
 
 		if( result )
 		{
+			this.CloseSession();
 			UnityEngine.SceneManagement.SceneManager.LoadScene( "LoadingLobby" , UnityEngine.SceneManagement.LoadSceneMode.Single );
 			LOG.printLog( "DEBUG" , "OK" , "OnSignIn()" );
 		}

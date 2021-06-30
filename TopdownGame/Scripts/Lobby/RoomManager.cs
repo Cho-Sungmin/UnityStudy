@@ -20,7 +20,6 @@ public class RoomManager : MonoBehaviour
 	private void Start()
 	{
 		lobbySession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLobbySession(this);
-		lobbySession.OpenSession();
 
 		//--- Get components ---//
 		listPanel = transform.GetChild(0);
@@ -74,9 +73,9 @@ public class RoomManager : MonoBehaviour
 	{
 		Room roomInfo = GetRoomInfo( roomNo );
 		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
-
 		gameSession.SetRoomInfo( roomInfo );
 
+		lobbySession.CloseSession();
 		SceneManager.LoadScene("LoadingInGame" , LoadSceneMode.Single);
 	}
 

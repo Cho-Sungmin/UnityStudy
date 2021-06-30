@@ -189,6 +189,12 @@ public class LOG
         case FUNCTION_CODE.NOTI_REPLICATION :
             typeStr = "NOTI_REPLICATION";
             break;
+        case FUNCTION_CODE.NOTI_BYE :
+            typeStr = "NOTI_BYE";
+            break;
+        case FUNCTION_CODE.CHAT :
+            typeStr = "CHAT";
+            break;
         case FUNCTION_CODE.SUCCESS :
             typeStr = "SUCCESS";
             break;

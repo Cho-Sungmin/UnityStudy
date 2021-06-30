@@ -24,6 +24,21 @@ public struct Header
 		stream.Write( len );
 		stream.Write( sessionID );
 	}
+
+	public void InsertFront( ref OutputByteStream stream )
+	{
+		stream.Shift( Header.SIZE );
+		int newCursor = stream.GetLength();
+		stream.Flush();
+
+		stream.Write( type );
+		stream.Write( func );
+		stream.Write( len );
+		stream.Write( sessionID );
+
+		stream.SetCursor( newCursor );
+	}
+
 		
 	public static byte[] GetBytes( InputByteStream stream )
 	{
@@ -77,6 +92,8 @@ enum FUNCTION_CODE : UInt16 {
 	//--- Others ---//
 	NOTI_WELCOME,
 	NOTI_REPLICATION,
+	NOTI_BYE,
+	CHAT,
 	SUCCESS,
 	FAIL,
 	REJECT,

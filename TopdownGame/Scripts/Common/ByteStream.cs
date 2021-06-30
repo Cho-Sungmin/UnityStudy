@@ -20,6 +20,7 @@ public class InputByteStream
 		System.Buffer.BlockCopy( obstream.GetBuffer() , 0 , buffer , 0 , capacity );
 	}
 
+
 	public int GetRemainLength()
 	{ return capacity - cursor; }
 
@@ -34,6 +35,7 @@ public class InputByteStream
 		System.Buffer.BlockCopy( buffer , cursor , data , 0 , size );
 		cursor += size;
 	}
+
 	public void Read( out byte data )
 	{
 		if( IsEmpty() )
@@ -146,11 +148,20 @@ public class OutputByteStream
 		System.Buffer.BlockCopy( ibstream.GetBuffer() , 0 , buffer , 0 , capacity );
 	}
 
+	public void Shift( int size )
+	{
+		Buffer.BlockCopy( buffer , 0 , buffer , size ,  cursor );
+		cursor += size;
+	}
+
 	public int GetLength()
 	{	return cursor;	}
 
 	public byte[] GetBuffer()
 	{	return buffer;	}
+
+	public void SetCursor( int newCursor )
+	{ cursor = newCursor; }
 
 	void ReallocBuffer( int newSize )
 	{
@@ -167,7 +178,7 @@ public class OutputByteStream
 
 		if( dataLen > capacity - cursor )
 		{
-			int newCapacity = Math.Max( dataLen , 2 * capacity );
+			int newCapacity = Math.Max( dataLen + cursor , 2 * capacity );
 
 			ReallocBuffer( newCapacity );
 		}

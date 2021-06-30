@@ -4,15 +4,16 @@ using System;
 
 public class LobbySession : Session
 {
+	OutputByteStream obstream;
 	List<Room> roomList;
 	RoomManager roomManager;
-
 	UserInfo userInfo;
 	
 	public LobbySession( ref UserInfo _userInfo ) : base(1066)
 	{	
 		roomList = new List<Room>();
 		userInfo = _userInfo;
+		obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 	}
 
 	public LobbySession GetInstance( RoomManager mgr )
@@ -28,7 +29,6 @@ public class LobbySession : Session
 
 	public override void Init()
     {
-        
         client.Init();
 
         client.RegisterHandler( (int) FUNCTION_CODE.ANY , Heartbeat );
@@ -48,24 +48,27 @@ public class LobbySession : Session
 	{
 		if( userInfo == null )
 			return ;
-		
-		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 
-		userInfo.Write( payload );
-
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + payload.GetLength() );
+		userInfo.Write( obstream );
 
 		Header header = new Header();
 
 		header.type = (byte) PACKET_TYPE.REQ;
 		header.func = (UInt16) FUNCTION_CODE.REQ_ENTER_LOBBY;
-		header.len = payload.GetLength();
+		header.len = obstream.GetLength();
 		header.sessionID = GetSessionID();
 
-		header.Write( ref packet );
-		packet.Write( payload.GetBuffer() , header.len );
+		header.InsertFront( ref obstream );
+		
+		try {
+			client.Send( new InputByteStream( obstream ) );
+		}
+		catch( System.Net.Sockets.SocketException e )
+		{
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
+		}
 
-		client.Send( new InputByteStream( packet ) );
+		obstream.Flush();
 	}
 
 	public List<Room> GetRoomList()
@@ -93,27 +96,24 @@ public class LobbySession : Session
 		Header header = new Header();
 		header.Read( ref packet );
 
-		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
-		userInfo.Write( payload );
+		userInfo.Write( obstream );
 	
 		header.type = (byte) PACKET_TYPE.REQ;
 		header.func = (UInt16) FUNCTION_CODE.REQ_ROOM_LIST;
-		header.len = payload.GetLength();
+		header.len = obstream.GetLength();
 		header.sessionID = GetSessionID();
 
-		OutputByteStream resPacket = new OutputByteStream( Header.SIZE + header.len );
-		header.Write( ref resPacket );
-		resPacket.Write( payload.GetBuffer() , header.len );
-
-		
+		header.InsertFront( ref obstream );
 
 		try {
-			client.Send( new InputByteStream(resPacket) );
+			client.Send( new InputByteStream( obstream ) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
 			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
 		}
+
+		obstream.Flush();
 	}
 
 	void ResponseRoomList( InputByteStream packet )
@@ -140,7 +140,10 @@ public class LobbySession : Session
 		{
 			room = new Room();
 			room.Read( ibstream );
-			roomList.Add(room);
+			bool isExists = roomList.Exists( (Room element) => { return room.m_roomId == element.m_roomId; } );
+
+			if( !isExists )
+				roomList.Add(room);
 		}
 
 		if( roomManager != null )
@@ -156,18 +159,18 @@ public class LobbySession : Session
 		header.len = roomInfoData.GetRemainLength();
 		header.sessionID = GetSessionID();
 
-		OutputByteStream packet = new OutputByteStream( Header.SIZE + header.len );
-
-		header.Write( ref packet );
-		packet.Write( roomInfoData.GetBuffer() , header.len );
+		header.Write( ref obstream );
+		obstream.Write( roomInfoData.GetBuffer() , header.len );
 
 		try {
-			client.Send( new InputByteStream( packet ) );
+			client.Send( new InputByteStream( obstream ) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
 			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
 		}
+
+		obstream.Flush();
 	}
 
 	void ResponseMakeRoom( InputByteStream packet )

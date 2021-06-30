@@ -16,11 +16,6 @@ public class Session
 		//messageThread = new Thread( Run );
 	}
 
-	~Session()
-	{
-		LOG.printLog( "DEBUG" , "MEMORY" , "~Session()" );
-		CloseSession();
-	}
 	public virtual void Init()
 	{
 		client.Init();
@@ -53,6 +48,7 @@ public class Session
 	public void CloseSession()
 	{
 		isOpen = false;
+		NotiBye();
 		client.Disconnect();
 	}
 
@@ -71,6 +67,20 @@ public class Session
 		Header header = new Header(); header.Read( ref packet );
 
 		id = header.sessionID;
+	}
+
+	public void NotiBye()
+	{
+		Header header = new Header();
+		header.type = (byte) PACKET_TYPE.NOTI;
+		header.func = (ushort) FUNCTION_CODE.NOTI_BYE;
+		header.len = 0;
+		header.sessionID = id;
+
+		OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		header.Write( ref obstream );
+
+		client.Send( new InputByteStream( obstream ) );
 	}
 
 	public void Heartbeat( InputByteStream packet )

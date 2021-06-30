@@ -12,7 +12,7 @@ namespace Client {
 		IPAddress m_serverAddr;
 
 		Thread[] m_threadArr;
-		bool m_threadFlag = true;
+		bool m_threadFlag = false;
 
 		System.Collections.Concurrent.ConcurrentQueue<InputByteStream> m_recvQueue;
 		System.Collections.Concurrent.ConcurrentQueue<InputByteStream> m_sendQueue;
@@ -23,10 +23,7 @@ namespace Client {
 		public virtual void Init()
 		{
 			//--- Init socket ---//
-			m_serverSock = new Socket( AddressFamily.InterNetwork , SocketType.Stream , ProtocolType.Tcp );
 			m_serverAddr = IPAddress.Parse("192.168.0.6");
-
-			m_serverSock.Blocking = true;
 
 
 			//--- Init threads ---//
@@ -57,8 +54,14 @@ namespace Client {
 
 		public void Connect( int port )
 		{
+			m_threadFlag = true;
+			m_threadArr[0] = new Thread( this.RecvProcedure );
+
 			try {
+				m_serverSock = new Socket( AddressFamily.InterNetwork , SocketType.Stream , ProtocolType.Tcp );
+				m_serverSock.Blocking = true;
 				m_serverSock.Connect( m_serverAddr , port );
+
 				LOG.printLog( "TCP" , "OK" , "Connect()" );
 			}
 			catch( System.Exception e )
@@ -71,11 +74,23 @@ namespace Client {
 		public void Disconnect()
 		{
 			m_threadFlag = false;
+			ClearQueue();
 
 			if( m_serverSock.Connected )
 				m_serverSock.Disconnect(false);
 
 			LOG.printLog( "TCP" , "NOTI" , "Disconnect()" );
+		}
+
+		void ClearQueue()
+		{
+			int cnt = m_recvQueue.Count;
+			InputByteStream ibstream;
+
+			for( int i=0; i<cnt; ++i )
+				m_recvQueue.TryDequeue( out ibstream );
+			for( int i=0; i<cnt; ++i )
+				m_sendQueue.TryDequeue( out ibstream );
 		}
 
 		//--- Functions ---//
@@ -126,7 +141,7 @@ namespace Client {
 		void RecvProcedure()
 		{
 			OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
-
+				
 			while( m_threadFlag )
 			{
 				obstream.Flush();
