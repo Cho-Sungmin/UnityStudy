@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System;
 
 public class LoginManager : MonoBehaviour
 {
@@ -17,7 +18,6 @@ public class LoginManager : MonoBehaviour
 
 	private void Awake()
 	{
-
 		Transform logInPanel = transform.GetChild(0);
 
 		id_input = logInPanel.GetChild(0).GetChild(1).GetComponent<InputField>();
@@ -30,7 +30,7 @@ public class LoginManager : MonoBehaviour
 
 	private void Start()
 	{
-		loginSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLoginSession( this );
+		loginSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLoginSession();
 		loginSession.OpenSession();
 		bt_sign.onClick.AddListener( RequstSignIn );
 	}
@@ -38,39 +38,29 @@ public class LoginManager : MonoBehaviour
 	{
 		userInfo = new UserInfo();
 
-		userInfo.SetId( id_input.text );
-		userInfo.SetPw( pw_input.text );
-
-		int payload_len = userInfo.GetId().Length + userInfo.GetPw().Length;
-
-		//--- Set packet header ---//
-		HEAD header = new HEAD( (int)PACKET_TYPE.REQ , (int)FUNCTION_CODE.REQ_VERIFY , payload_len , 0 );
-
-		//--- Convert string to bytes ---//
-		byte[] tmp_data = new byte[payload_len];
-		System.Buffer.BlockCopy( userInfo.GetBytes() , 0 , tmp_data , 0 , payload_len );
+		userInfo.m_id = id_input.text;
+		userInfo.m_pw = pw_input.text;
 
 		//--- Set payload of packet ---//
-		Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
-		packet.head = header;
-		packet.SetPayload( tmp_data );
+		OutputByteStream payload = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		userInfo.Write( payload );
+
+		//--- Set header of packet ---//
+		Header header = new Header();
+		
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_VERIFY;
+		header.len = payload.GetLength();
+		header.sessionID = loginSession.GetSessionID();
+
+		OutputByteStream packet = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		header.Write( ref packet );
+		packet.Write( payload.GetBuffer() , header.len );
+
+		InputByteStream ibstream = new InputByteStream( packet );
 
 		// Post REQ_MSG to msg_queue
-		loginSession.PostMessage( packet );
-		
-	}
-
-	public void OnSignIn( bool result )
-	{
-		if( result )
-		{
-			SceneManager.LoadScene( "LoadingLobby" , LoadSceneMode.Single );
-			Debug.Log("로그인 성공!!!");
-		}
-		else
-		{
-			Debug.Log("로그인 실패!!!");
-		}
+		loginSession.PostMessage( ref ibstream );
 	}
 
 	private void OnDestroy()

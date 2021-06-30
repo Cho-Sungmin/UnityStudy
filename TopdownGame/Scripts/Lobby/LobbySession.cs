@@ -1,30 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
+using System;
 
 public class LobbySession : Session
 {
+	OutputByteStream obstream;
 	List<Room> roomList;
 	RoomManager roomManager;
-	LoadingLobby loadingLobby;
-
 	UserInfo userInfo;
 	
 	public LobbySession( ref UserInfo _userInfo ) : base(1066)
 	{	
 		roomList = new List<Room>();
 		userInfo = _userInfo;
+		obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 	}
 
 	public LobbySession GetInstance( RoomManager mgr )
 	{
 		roomManager = mgr;
-		return this;
-	}
-
-	public LobbySession GetInstance( LoadingLobby mgr )
-	{
-		loadingLobby = mgr;
 		return this;
 	}
 
@@ -35,10 +29,10 @@ public class LobbySession : Session
 
 	public override void Init()
     {
-        
         client.Init();
-        
-		client.RegisterHandler( (int) FUNCTION_CODE.REQ_ENTER_LOBBY , RequestEnterLobby );
+
+        client.RegisterHandler( (int) FUNCTION_CODE.ANY , Heartbeat );
+		client.RegisterHandler( (int) FUNCTION_CODE.NOTI_WELCOME , RequestEnterLobby );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_ROOM_LIST , RequestRoomList );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_MAKE_ROOM , RequestMakeRoom );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS , ResponseEnterLobby );
@@ -54,12 +48,27 @@ public class LobbySession : Session
 	{
 		if( userInfo == null )
 			return ;
+
+		userInfo.Write( obstream );
+
+		Header header = new Header();
+
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_ENTER_LOBBY;
+		header.len = obstream.GetLength();
+		header.sessionID = GetSessionID();
+
+		header.InsertFront( ref obstream );
 		
-		Packet packet = new Packet( TCP.TCP.MAX_PAYLOAD_SIZE );
-		
-		packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ENTER_LOBBY , userInfo.Size());
-		packet.SetPayload( userInfo.GetBytes() );
-		client.Send( packet );
+		try {
+			client.Send( new InputByteStream( obstream ) );
+		}
+		catch( System.Net.Sockets.SocketException e )
+		{
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
+		}
+
+		obstream.Flush();
 	}
 
 	public List<Room> GetRoomList()
@@ -67,114 +76,126 @@ public class LobbySession : Session
 		return roomList;
 	}
 
-    public void RequestEnterLobby( Packet packet )
+    void ResponseEnterLobby( InputByteStream packet )
 	{
-        packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ENTER_LOBBY , 0);
-		//Debug.Log("RequestEnterLobby()");
-		try {
-			client.Send( packet );
-		}
-		catch( System.Net.Sockets.SocketException e )
-		{
-			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
-		}
-	}
-    void ResponseEnterLobby( Packet packet )
-	{
-		//Debug.Log("ResponseEnterLobby()");
+		Header header = new Header();
+		header.Read( ref packet );
 
-		if( packet.head.func == (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_ENTER_LOBBY_SUCCESS )
         {
 			RequestRoomList( packet );
         }
 		else
 		{
-			//Debug.Log("Failed to enter lobby");
+			LOG.printLog( "REQ" , "NOTI" , "Failed to enter lobby" );
 		}
 	}
 
-	public void RequestRoomList( Packet packet )
+	public void RequestRoomList( InputByteStream packet )
 	{
-	//Debug.Log("RequestRoomList()");
+		Header header = new Header();
+		header.Read( ref packet );
 
-		packet.head.SetHead( (int) PACKET_TYPE.REQ , (int) FUNCTION_CODE.REQ_ROOM_LIST , 0 );
+		userInfo.Write( obstream );
+	
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_ROOM_LIST;
+		header.len = obstream.GetLength();
+		header.sessionID = GetSessionID();
+
+		header.InsertFront( ref obstream );
 
 		try {
-			client.Send( packet );
+			client.Send( new InputByteStream( obstream ) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
-			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
 		}
+
+		obstream.Flush();
 	}
 
-	void ResponseRoomList( Packet packet )
+	void ResponseRoomList( InputByteStream packet )
 	{
-		//Debug.Log("ResponseRoomList()");
+		Header header = new Header();
+		header.Read( ref packet );
 
-		JSON.JsonParser jsonParser = new JSON.JsonParser( packet.data );
-
-		if( packet.head.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
+		if( header.func == (int) FUNCTION_CODE.RES_ROOM_LIST_SUCCESS )
         {
-			//--- 받아온 방 목록 데이터를 파싱해서 유니티에 세팅 ---//
-
-			SetRoomList( roomList , jsonParser );
-
-			loadingLobby.LoadRoom();
+			SetRoomList( roomList , packet );
+			UnityEngine.SceneManagement.SceneManager.LoadScene( "RoomList" , UnityEngine.SceneManagement.LoadSceneMode.Single );
         }
 		else
 		{
-			//Debug.Log("Failed to load room list");
+			LOG.printLog( "REQ" , "NOTI" , "Failed to load room list" );
 		}
 	}
 
-	public void SetRoomList( List<Room> roomList , JSON.JsonParser jsonParser )
+	public void SetRoomList( List<Room> roomList , InputByteStream ibstream )
 	{
 		Room room;
-		Hashtable rooms = jsonParser.m_hashtable["room list"] as Hashtable;
 
-		if( rooms == null )
-			return ;
-
-		for (int n=0; n<rooms.Count; n++)
+		while( ibstream.GetRemainLength() > 0 )
 		{
 			room = new Room();
+			room.Read( ibstream );
+			bool isExists = roomList.Exists( (Room element) => { return room.m_roomId == element.m_roomId; } );
 
-			room.m_capacity = System.Convert.ToInt32(rooms["capacity"] as string);
-			room.m_presentMembers = System.Convert.ToInt32(rooms["presentMembers"] as string);
-			room.m_title = rooms["title"] as string;
-		
-			roomList.Add(room);
+			if( !isExists )
+				roomList.Add(room);
 		}
 
+		if( roomManager != null )
+			roomManager.SetRoomInfo( roomList );
 	}
 
-	public void RequestMakeRoom( Packet packet )
+	public void RequestMakeRoom( InputByteStream roomInfoData )
 	{
+		Header header = new Header();
+
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (UInt16) FUNCTION_CODE.REQ_MAKE_ROOM;
+		header.len = roomInfoData.GetRemainLength();
+		header.sessionID = GetSessionID();
+
+		header.Write( ref obstream );
+		obstream.Write( roomInfoData.GetBuffer() , header.len );
+
 		try {
-			client.Send( packet );
+			client.Send( new InputByteStream( obstream ) );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
-			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
 		}
+
+		obstream.Flush();
 	}
 
-	void ResponseMakeRoom( Packet packet )
+	void ResponseMakeRoom( InputByteStream packet )
 	{
-		
-		if( packet.head.func == (int) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
-        {
-			//--- TODO : Update information in game session  ---//
-			JSON.JsonParser jsonParser = new JSON.JsonParser( packet.data );
-			SetRoomList( roomList , jsonParser );
+		Header header = new Header();
 
+		header.Read( ref packet );
+		
+		if( header.func == (ushort) FUNCTION_CODE.RES_MAKE_ROOM_SUCCESS )
+        {
+			//--- Update information in game session  ---//
+
+			SetRoomList( roomList , packet );
 			roomManager.JoinRoom( roomList.Count-1 );
         }
 		else
 		{
-			//Debug.Log("Failed to load room list");
+			LOG.printLog( "REQ" , "NOTI" , "Failed to make new room" );
 		}
+	}
+
+	public void RequestEnterLobby( InputByteStream packet )
+	{
+		NotiWelcomeInfo( packet );
+		RequestEnterLobby();
 	}
 
 }

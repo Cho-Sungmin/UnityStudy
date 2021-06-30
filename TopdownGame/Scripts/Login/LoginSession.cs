@@ -2,7 +2,6 @@
 
 public class LoginSession : Session
 {
-	LoginManager loginManager;
 
 	public UserInfo userInfo;
 	
@@ -11,10 +10,8 @@ public class LoginSession : Session
 		userInfo = _userInfo;
 	}
 
-	public LoginSession GetInstance( LoginManager mgr )
+	public LoginSession GetInstance()
 	{
-		loginManager = mgr;
-
 		return this;
 	}
 	
@@ -22,33 +19,45 @@ public class LoginSession : Session
 	public override void Init() 
 	{
 		client.Init();
+		client.RegisterHandler( (int) FUNCTION_CODE.ANY , Heartbeat );
+		client.RegisterHandler( (int) FUNCTION_CODE.NOTI_WELCOME , NotiWelcomeInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_VERIFY , ReqVerifyUserInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_VERIFY_SUCCESS , ResVerifyUserInfo );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_VERIFY_FAIL , ResVerifyUserInfo );
 	}
 
-	void ReqVerifyUserInfo( Packet packet )
+	void ReqVerifyUserInfo( InputByteStream packet )
 	{
-		//Debug.Log("ReqVerifyUserInfo()");
 		try {
 			client.Send( packet );
 		}
 		catch( System.Net.Sockets.SocketException e )
 		{
-			//Debug.LogError( e.Message + " in Function '" + e.TargetSite + "'");
 		}
 	}
-	void ResVerifyUserInfo( Packet packet )
+	void ResVerifyUserInfo( InputByteStream packet )
 	{
+		Header header = new Header();
+		header.Read( ref packet );
+
 		bool result = false;
 
-		if( packet.head.func == (int) FUNCTION_CODE.RES_VERIFY_SUCCESS )
+		if( header.func == (ushort) FUNCTION_CODE.RES_VERIFY_SUCCESS )
 		{
 			result = true;
-			userInfo.SetBytes( packet.data );
+			userInfo.Read( packet );
 		}
 
-		loginManager.OnSignIn( result );
+		if( result )
+		{
+			this.CloseSession();
+			UnityEngine.SceneManagement.SceneManager.LoadScene( "LoadingLobby" , UnityEngine.SceneManagement.LoadSceneMode.Single );
+			LOG.printLog( "DEBUG" , "OK" , "OnSignIn()" );
+		}
+		else
+		{
+			LOG.printLog( "DEBUG" , "FAIL" , "OnSignIn()" );
+		}
 	}
 
 	

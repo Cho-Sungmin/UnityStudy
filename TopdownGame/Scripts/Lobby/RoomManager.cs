@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,7 +7,6 @@ using UnityEngine.SceneManagement;
 public class RoomManager : MonoBehaviour
 {
 	LobbySession lobbySession;
-
 	Transform listPanel;
 	List<GameObject> roomObjectList;
 	Text roomTitle;
@@ -21,7 +20,6 @@ public class RoomManager : MonoBehaviour
 	private void Start()
 	{
 		lobbySession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetLobbySession(this);
-		lobbySession.OpenSession();
 
 		//--- Get components ---//
 		listPanel = transform.GetChild(0);
@@ -43,13 +41,12 @@ public class RoomManager : MonoBehaviour
 		{
 			for( int i=0; i<numOfRooms; i++ )
 			{
-					
+				int roomNo = i;
 				//--- Set component with room list ---//
-				
 				roomObjectList[i].transform.GetChild(0).gameObject.SetActive(false);
 				roomObjectList[i].transform.GetChild(1).gameObject.SetActive(true);
 				roomObjectList[i].transform.GetChild(2).gameObject.SetActive(true);
-				roomObjectList[i].transform.GetChild(2).GetComponent<Button>().onClick.AddListener( delegate { JoinRoom(i); } );
+				roomObjectList[i].transform.GetChild(2).GetComponent<Button>().onClick.AddListener( delegate { JoinRoom(roomNo); } );
 
 				SetRoomInfo( lobbySession.GetRoomList() );
 			}
@@ -69,21 +66,16 @@ public class RoomManager : MonoBehaviour
 
 	private void MakeRoom()
 	{
-		SceneManager.LoadScene("MakeRoom" , LoadSceneMode.Single);
-	}
-
-	public void LoadRoom( Room roomInfo )
-	{
-		SceneManager.LoadScene("InGame" , LoadSceneMode.Single);
+		SceneManager.LoadScene("MakeRoom" , LoadSceneMode.Additive);
 	}
 
 	public void JoinRoom( int roomNo )
 	{
 		Room roomInfo = GetRoomInfo( roomNo );
-		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession( this );
-
+		GameSession gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
 		gameSession.SetRoomInfo( roomInfo );
 
+		lobbySession.CloseSession();
 		SceneManager.LoadScene("LoadingInGame" , LoadSceneMode.Single);
 	}
 
@@ -91,13 +83,14 @@ public class RoomManager : MonoBehaviour
 	{
 		for( int i=0; i<roomList.Count; i++ )
 		{
-			string title = roomList[i].m_title;
+			string roomNumber = "[" + roomList[i].m_roomId + "] ";
+			string title = roomNumber + roomList[i].m_title;
 			string capacity = "" + roomList[i].m_capacity;
 			string members = "" + roomList[i].m_presentMembers;
 
 			string title_sub = " ( " + members + " / " + capacity + " ) ";
 
-			roomObjectList[i].transform.GetChild(1).GetComponent<Text>().text = title.Insert( title.IndexOf('\0') , title_sub );
+			roomObjectList[i].transform.GetChild(1).GetComponent<Text>().text = title.Insert( title.Length , title_sub );
 		}
 	}
 
@@ -108,12 +101,24 @@ public class RoomManager : MonoBehaviour
 		
 		title = title.Trim();
 
-		int pivot = title.IndexOf("(");
-		int pivot2 = title.IndexOf("/");
+		int delimIndex = title.IndexOf("]");
+		string roomNumber = title.Substring( 0 , delimIndex+1 );
+		title = title.Substring( delimIndex+1 );
 
-		roomInfo.m_title = title.Substring( 0 , pivot );
-		roomInfo.m_presentMembers = System.Int32.Parse( title.Substring( pivot+1 , pivot2 ) );
-		roomInfo.m_capacity = System.Int32.Parse( title.Substring( pivot2 , title.Length-1 ) );
+		delimIndex = title.LastIndexOf("(");
+		string roomTitle = title.Substring( 0 , delimIndex );
+		title = title.Substring( delimIndex );
+
+		delimIndex = title.LastIndexOf(")");
+		string roomState = title.Substring( 0 , delimIndex+1 ).Trim( '(' , ')' );
+		roomState = roomState.Trim();
+
+		delimIndex = roomState.IndexOf("/");
+
+		roomInfo.m_roomId = roomNumber.Trim( '[' , ' ' , ']' );
+		roomInfo.m_title = roomTitle.Trim();
+		roomInfo.m_presentMembers = System.UInt32.Parse( roomState.Substring( 0 , delimIndex ) );
+		roomInfo.m_capacity = System.UInt32.Parse( roomState.Substring( delimIndex+1 ) );
 
 		return roomInfo;
 	}

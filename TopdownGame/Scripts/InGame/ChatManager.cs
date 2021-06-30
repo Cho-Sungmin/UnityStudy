@@ -7,29 +7,29 @@ using TMPro;
 public class ChatManager: MonoBehaviour
 {
     Image chatPanel;
-
     InputField chatContext;
-
     Button sendButton;
     Image chatBubble;
     TextMeshProUGUI bubbleText;
+    GameSession gameSession;
+    OutputByteStream obstream;
+    uint playerObjectId;
 
 	private void Awake()
 	{
-		chatPanel = transform.GetChild(0).GetComponent<Image>();
-
-        chatContext = chatPanel.transform.GetChild(0).GetComponent<InputField>();
-        
-        sendButton = chatPanel.transform.GetChild(1).GetComponent<Button>();
-
-        chatBubble = transform.GetChild(1).GetComponent<Image>();
-        bubbleText = chatBubble.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+		chatPanel = gameObject.GetComponent<Image>();
+            chatContext = transform.GetChild(0).GetComponent<InputField>();
+            sendButton = transform.GetChild(1).GetComponent<Button>();
+            chatBubble = transform.GetChild(2).GetComponent<Image>();
+            bubbleText = chatBubble.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
 	}
 	// Start is called before the first frame update
 	void Start()
     {
-        chatBubble.gameObject.SetActive(false);
         SetOnChatPanel(false);
+        gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
+        playerObjectId = gameSession.gameObjectManager.GetPlayerObjectId();
+        obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
     }
 
     // Update is called once per frame
@@ -37,7 +37,7 @@ public class ChatManager: MonoBehaviour
     {
         if( Input.GetKeyDown( KeyCode.Return ) )
         {
-            if( chatPanel.IsActive() )
+            if( chatPanel.enabled )
             {
                 SendMSG(chatContext.text);
                 DisplayMSG(chatContext.text);
@@ -54,7 +54,21 @@ public class ChatManager: MonoBehaviour
 
     void SendMSG( string contents )
     {
+        obstream.Write( playerObjectId );
+        obstream.Write( contents );
+
+        Header header = new Header();
+        header.type = (byte) PACKET_TYPE.MSG;
+        header.func = (ushort) FUNCTION_CODE.CHAT;
+        header.len = obstream.GetLength();
+        header.sessionID = gameSession.GetSessionID();
+
+        header.InsertFront( ref obstream );
         
+        InputByteStream packet = new InputByteStream( obstream );
+        gameSession.client.Send( packet );
+
+        obstream.Flush();
     }
     
     void DisplayMSG( string contents )
@@ -71,8 +85,9 @@ public class ChatManager: MonoBehaviour
 
     void SetOnChatPanel( bool value )
     {
-        chatPanel.gameObject.SetActive(value);
-        
+        chatPanel.enabled = value;
+        chatContext.gameObject.SetActive(value);
+        sendButton.gameObject.SetActive(value);
     }
 
     void ClearBubble()

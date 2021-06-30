@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿
 using UnityEngine;
 
 public class LoadingInGame : MonoBehaviour
@@ -9,10 +8,10 @@ public class LoadingInGame : MonoBehaviour
 	private void Awake()
 	{
 		gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
+		gameSession.OpenSession();
 	}
 
 	private void Start()
 	{
-		gameSession.RequestJoinGame();
 	}
 }

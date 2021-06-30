@@ -1,21 +1,27 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿
 using UnityEngine;
 
 public class PlayerScript : MonoBehaviour
 {
+	GameSession gameSession;
 	GameObject gameManager;
 	Rigidbody2D rigid;
 	Animator animator;
+	PlayerObject player;
 
 	int direction = 0;
 	Vector3 dirVec = Vector3.zero;
 
 	private void Awake()
 	{
+		gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
 		gameManager = GameObject.Find("GameManager");
 		rigid = GetComponent<Rigidbody2D>();
 		animator = GetComponent<Animator>();
+		player = (PlayerObject) gameSession.gameObjectManager.GetGameObject( System.Convert.ToUInt32(name) );
+		name = "Player";
+
+		rigid.velocity = player.velocity;
 
 		SetDirection( 0 );
 	}
@@ -50,7 +56,7 @@ public class PlayerScript : MonoBehaviour
 
 			SetDirection( newDirection );
 
-			rigid.velocity = Vector2.zero;
+			player.velocity = Vector2.zero;
 		}
 		else if( x == 0 || y == 0 )
 		{
@@ -79,12 +85,18 @@ public class PlayerScript : MonoBehaviour
 			}			
 				
 			SetDirection( newDirection );
-
-			//transform.Translate( new Vector2( x, y ) );
-			rigid.velocity = new Vector2( 3*x , 3*y );
-
+			player.velocity = new Vector2( 3*x , 3*y );
 		}
-		
+
+		rigid.velocity = player.velocity;
+		player.position = rigid.position;
+		player.direction = direction;
+
+		OutputByteStream objectStream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		objectStream.Write( (byte) ReplicationAction.UPDATE );
+		objectStream.Write( gameSession.gameObjectManager.GetObjectId( player ) );
+
+		gameSession.NotificateReplication( new InputByteStream( objectStream ) );
 	}
 
 	void SetDirection( int newDirection )
@@ -106,7 +118,7 @@ public class PlayerScript : MonoBehaviour
 		else
 			directionVec = new Vector3( 0 , dir/2 );
 		
-		Debug.DrawRay( rigid.position , directionVec , Color.red );
+		UnityEngine.Debug.DrawRay( rigid.position , directionVec , Color.red );
 
 		return directionVec;
 	}
@@ -119,6 +131,18 @@ public class PlayerScript : MonoBehaviour
 			return rayCast.collider.gameObject;
 		else
 			return null;
-		
 	}
+
+	private void OnDestroy()
+	{
+		LOG.printLog( "DEBUG" , "MEMORY" , "OnDestroy() : PlayerScript" );
+
+		OutputByteStream objectStream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+		objectStream.Write( (byte) ReplicationAction.DESTROY );
+		objectStream.Write( gameSession.gameObjectManager.GetObjectId( player ) );
+
+		gameSession.NotificateReplication( new InputByteStream( objectStream ) );
+	}
+
+
 }
