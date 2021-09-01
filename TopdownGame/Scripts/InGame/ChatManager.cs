@@ -9,19 +9,17 @@ public class ChatManager: MonoBehaviour
     Image chatPanel;
     InputField chatContext;
     Button sendButton;
-    Image chatBubble;
-    TextMeshProUGUI bubbleText;
     GameSession gameSession;
     OutputByteStream obstream;
     uint playerObjectId;
+    ChatBubble bubble;
+    PlayerObject playerInfo;
 
 	private void Awake()
 	{
 		chatPanel = gameObject.GetComponent<Image>();
             chatContext = transform.GetChild(0).GetComponent<InputField>();
             sendButton = transform.GetChild(1).GetComponent<Button>();
-            chatBubble = transform.GetChild(2).GetComponent<Image>();
-            bubbleText = chatBubble.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
 	}
 	// Start is called before the first frame update
 	void Start()
@@ -30,11 +28,23 @@ public class ChatManager: MonoBehaviour
         gameSession = GameObject.Find("SessionManager").GetComponent<SessionManager>().GetGameSession();
         playerObjectId = gameSession.gameObjectManager.GetPlayerObjectId();
         obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+
+        GameObject obj = (GameObject) Instantiate( Resources.Load("Prefabs/Bubble") , GameObject.Find("ChatBubble").transform );
+		obj.SetActive(true);
+		obj.name = name + "_bubble";
+		bubble = obj.transform.GetComponent<ChatBubble>();
+        playerInfo = (PlayerObject) gameSession.gameObjectManager.GetGameObject(playerObjectId);
     }
 
-    // Update is called once per frame
-    void Update()
+	private void FixedUpdate()
+	{
+		bubble.position.x = playerInfo.position.x;
+		bubble.position.y = playerInfo.position.y + 2.4f;
+	}
+	// Update is called once per frame
+	void Update()
     {
+
         if( Input.GetKeyDown( KeyCode.Return ) )
         {
             if( chatPanel.enabled )
@@ -76,8 +86,8 @@ public class ChatManager: MonoBehaviour
         if( IsInvoking("ClearBubble") )
             CancelInvoke();
 
-        bubbleText.text = contents;
-        chatBubble.gameObject.SetActive(true);
+        bubble.gameObject.SetActive(true);
+        bubble.SetContents( contents );
 
         Invoke("ClearBubble" , 3);
         
@@ -92,6 +102,6 @@ public class ChatManager: MonoBehaviour
 
     void ClearBubble()
     {
-        chatBubble.gameObject.SetActive(false);
+        bubble.gameObject.SetActive(false);
     }
 }

@@ -65,7 +65,6 @@ public class ReplicationManager
 				obj = ObjectCreationRegistry.GetInstance().CreateObject( header.classId );
 				gameObjectManager.AddGameObject( obj , header.objectId );
 				GameObjectInstantiator.InstantiateObject( obj , gameObjectManager.GetObjectId( obj ) ).AddComponent<OtherPlayer>();
-				
 			}
 			obj.Read( ibstream );
 		}
@@ -73,6 +72,8 @@ public class ReplicationManager
 		{
 			obj = gameObjectManager.GetGameObject( header.objectId );
 			gameObjectManager.RemoveGameObject( obj );
+			UnityEngine.GameObject invalidObject = UnityEngine.GameObject.Find( System.Convert.ToString(header.objectId) );
+			UnityEngine.GameObject.Destroy( invalidObject );
 		}
 		else
 		{
