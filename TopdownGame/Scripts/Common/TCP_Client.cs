@@ -84,11 +84,13 @@ namespace Client {
 
 		void ClearQueue()
 		{
-			int cnt = m_recvQueue.Count;
 			InputByteStream ibstream;
 
+			int cnt = m_recvQueue.Count;
 			for( int i=0; i<cnt; ++i )
 				m_recvQueue.TryDequeue( out ibstream );
+
+			cnt = m_sendQueue.Count;
 			for( int i=0; i<cnt; ++i )
 				m_sendQueue.TryDequeue( out ibstream );
 		}
@@ -109,6 +111,7 @@ namespace Client {
 			if( m_handlerMap.ContainsKey(header.func) )
 				m_handlerMap[header.func]( msg );
 		}
+
 		void DispatchToSend()
 		{
 			InputByteStream packet;
@@ -120,7 +123,6 @@ namespace Client {
 			}
 		}
 		
-
 		void DispatchToRecv()
 		{
 			InputByteStream packet;
@@ -149,7 +151,10 @@ namespace Client {
 				//--- Receive messages and enqueue data ---//
 				try {
 					Recv( obstream );
-					m_recvQueue.Enqueue( new InputByteStream(obstream) );
+					InputByteStream ibstream = new InputByteStream( obstream );
+					m_recvQueue.Enqueue( ibstream );
+
+					LOG.printLog( ibstream , LOG.TYPE.RECV );
 				}
 				catch( System.Net.Sockets.SocketException e )
 				{
@@ -163,6 +168,7 @@ namespace Client {
 		{
 			try{
 				TCP.TCP.SendPacket( m_serverSock , packet );
+
 				LOG.printLog( packet , LOG.TYPE.SEND );
 			}
 			catch( SocketException e )
@@ -175,8 +181,6 @@ namespace Client {
 		{
 			try{
 				TCP.TCP.RecvPacket( m_serverSock , packet );
-				InputByteStream ibstream = new InputByteStream( packet );
-				LOG.printLog( ibstream , LOG.TYPE.RECV );
 			}
 			catch( SocketException e )
 			{

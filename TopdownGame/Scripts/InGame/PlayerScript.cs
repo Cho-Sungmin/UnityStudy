@@ -40,7 +40,6 @@ public class PlayerScript : MonoBehaviour
 	{
 		Move();
 		dirVec = DrawActionRay();
-		
 	}
 
 	void Move()

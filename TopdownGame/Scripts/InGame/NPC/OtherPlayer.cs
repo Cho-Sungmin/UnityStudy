@@ -1,7 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿
 using UnityEngine;
-using UnityEngine.UI;
+
 
 public class OtherPlayer : MonoBehaviour
 {
@@ -34,7 +33,7 @@ public class OtherPlayer : MonoBehaviour
         rigid.velocity = player.velocity;
 		rigid.position = player.position;
 		bubble.position.x = rigid.position.x;
-		bubble.position.y = rigid.position.y + 2.5f;
+		bubble.position.y = rigid.position.y + 2.4f;
 		SetDirection( player.direction );
 		
     }
@@ -63,4 +62,9 @@ public class OtherPlayer : MonoBehaviour
     {
         bubble.gameObject.SetActive(false);
     }
+
+	private void OnDestroy()
+	{
+		ClearBubble();
+	}
 }

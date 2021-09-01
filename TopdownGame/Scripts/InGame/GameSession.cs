@@ -135,7 +135,7 @@ public class GameSession : Session
 	//--- 서버로부터 받은 Replication 요청 수행 ---//
 	public void ProcessReplication( InputByteStream replicationData )
 	{
-		while( !replicationData.IsEmpty() )
+		if( !replicationData.IsEmpty() )
 		{
 			Header header = new Header(); header.Read( ref replicationData );
 			replicationManager.Replicate( replicationData );

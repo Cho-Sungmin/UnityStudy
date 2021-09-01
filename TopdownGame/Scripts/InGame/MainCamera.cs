@@ -5,7 +5,7 @@ using UnityEngine;
 public class MainCamera : MonoBehaviour
 {
 	GameObject player;
-	Vector3 zVec = new Vector3(0,0,-1);
+	Vector3 zVec = new Vector3(0,0,-2);
 
 	public void SetPlayerComponent()
 	{
