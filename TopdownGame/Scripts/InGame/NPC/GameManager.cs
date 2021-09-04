@@ -60,9 +60,7 @@ public class GameManager : MonoBehaviour
 
 	public void OnClickExit()
 	{
-		gameSession.RequestDestroyAllGameObject();
-		gameSession.CloseSession();
-		UnityEngine.SceneManagement.SceneManager.LoadScene("LoadingLobby");
+		gameSession.RequestQuitGame();
 	}
 
 	public void Interaction( GameObject npc )

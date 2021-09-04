@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿
 public class GameSession : Session
 {
 	Room roomInfo;
@@ -32,6 +31,8 @@ public class GameSession : Session
 		client.RegisterHandler( (int) FUNCTION_CODE.NOTI_WELCOME , RequestJoinGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_SUCCESS , ResponseJoinGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.RES_JOIN_GAME_FAIL , ResponseJoinGame );
+		client.RegisterHandler( (int) FUNCTION_CODE.RES_QUIT_GAME_SUCCESS , ResponseQuitGame );
+		client.RegisterHandler( (int) FUNCTION_CODE.RES_QUIT_GAME_FAIL , ResponseQuitGame );
 		client.RegisterHandler( (int) FUNCTION_CODE.NOTI_REPLICATION , NotificateReplication );
 		client.RegisterHandler( (int) FUNCTION_CODE.REQ_REPLICATION , ProcessReplication );
 		client.RegisterHandler( (int) FUNCTION_CODE.CHAT , Chat );
@@ -94,6 +95,49 @@ public class GameSession : Session
 			newObject.Read( packet );
 			gameObjectManager.AddGameObject( newObject , repHeader.objectId );
 			gameObjectManager.SetPlayerObject( repHeader.objectId );
+		}
+	}
+
+	public void RequestQuitGame()
+	{
+		//--- Set data with room_id and user_id ---//
+		obstream.Write( roomInfo.m_roomId );
+		obstream.Write( userInfo.m_id );
+
+		Header header = new Header();
+
+		header.type = (byte) PACKET_TYPE.REQ;
+		header.func = (ushort) FUNCTION_CODE.REQ_QUIT_GAME;
+		header.len = obstream.GetLength();
+		header.sessionID = GetSessionID();
+
+
+		header.InsertFront( ref obstream );
+
+		try {
+			client.Send( new InputByteStream( obstream ) );
+		}
+		catch( System.Net.Sockets.SocketException e )
+		{
+			LOG.printLog( "EXCEPT" , "WARN" , e.Message + " : " + e.TargetSite );
+		}
+
+		obstream.Flush();
+	}
+
+	public void ResponseQuitGame( InputByteStream packet )
+	{
+		Header header = new Header();
+		header.Read( ref packet );
+		ReplicationHeader repHeader = new ReplicationHeader();
+		repHeader.Read( packet );
+
+
+		if( header.func == (ushort) FUNCTION_CODE.RES_QUIT_GAME_SUCCESS )
+		{
+			RequestDestroyAllGameObject();
+			CloseSession();
+			UnityEngine.SceneManagement.SceneManager.LoadScene("LoadingLobby");
 		}
 	}
 
