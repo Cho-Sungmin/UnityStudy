@@ -52,7 +52,7 @@ public class PlayerScript : MonoBehaviour
 		if( x == 0 && y == 0 )
 		{
 			newDirection = direction - direction%10;
-
+	
 			SetDirection( newDirection );
 
 			player.velocity = Vector2.zero;

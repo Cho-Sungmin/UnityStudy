@@ -144,6 +144,9 @@ public class LOG
         case FUNCTION_CODE.REQ_JOIN_GAME :
             typeStr = "REQ_JOIN_GAME";
             break;
+        case FUNCTION_CODE.REQ_QUIT_GAME :
+            typeStr = "REQ_QUIT_GAME";
+            break;
         case FUNCTION_CODE.REQ_REPLICATION :
             typeStr = "REQ_REPLICATION";
             break;
@@ -182,6 +185,9 @@ public class LOG
             break;  
         case FUNCTION_CODE.RES_JOIN_GAME_FAIL :
             typeStr = "RES_JOIN_GAME_FAIL";
+            break;
+        case FUNCTION_CODE.RES_QUIT_GAME_FAIL :
+            typeStr = "RES_QUIT_GAME_FAIL";
             break;
         case FUNCTION_CODE.NOTI_WELCOME :
             typeStr = "NOTI_WELCOME";

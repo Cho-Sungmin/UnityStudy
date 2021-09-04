@@ -140,7 +140,15 @@ public class LobbySession : Session
 		{
 			room = new Room();
 			room.Read( ibstream );
-			bool isExists = roomList.Exists( (Room element) => { return room.m_roomId == element.m_roomId; } );
+			bool isExists = roomList.Exists( (Room element) => 
+											{	
+												if( room.m_roomId == element.m_roomId )
+												{
+													element.m_presentMembers = room.m_presentMembers;
+													return true;
+												}else
+													return false;
+											});
 
 			if( !isExists )
 				roomList.Add(room);
