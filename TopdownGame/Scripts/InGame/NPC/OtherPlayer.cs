@@ -60,11 +60,13 @@ public class OtherPlayer : MonoBehaviour
     }
 	void ClearBubble()
     {
-        bubble.gameObject.SetActive(false);
+		if(bubble.gameObject != null)
+			bubble.gameObject.SetActive(false);
     }
-
+	
 	private void OnDestroy()
 	{
 		ClearBubble();
 	}
+
 }

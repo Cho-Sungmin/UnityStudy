@@ -5,11 +5,13 @@ public class GameObjectManager
     uint playerObjectId = 0;
     Dictionary<uint , GameObjectInfo> objectTable;
     Dictionary<GameObjectInfo , uint> idTable;
+    public SortedDictionary<uint , uint> objectStateTable;
 
     public GameObjectManager()
     {
         objectTable = new Dictionary<uint, GameObjectInfo>();
         idTable = new Dictionary<GameObjectInfo, uint>();
+        objectStateTable = new SortedDictionary<uint, uint>();
     }
 
     public uint GetObjectId( GameObjectInfo obj )

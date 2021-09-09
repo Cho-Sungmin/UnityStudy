@@ -50,7 +50,12 @@ public struct Header
 
 	public void Display()
 	{
-		UnityEngine.Debug.Log("[" + type + "] " + "[" + func + "] " + "[" + len + "] " + "[" + sessionID + "]\n");			
+		string typeStr = System.Convert.ToString(type);
+		string funcStr = System.Convert.ToString(func);
+		string lenStr = System.Convert.ToString(len);
+		string sessionIDStr = System.Convert.ToString(sessionID);
+
+		UnityEngine.Debug.Log("[" + typeStr + "] " + "[" + funcStr + "] " + "[" + lenStr + "] " + "[" + sessionIDStr + "]");			
 	}
 
 }

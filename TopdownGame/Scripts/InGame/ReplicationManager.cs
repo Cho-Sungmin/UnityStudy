@@ -50,11 +50,16 @@ public class ReplicationManager
 		if( action == ReplicationAction.CREATE )
 		{
 			obj = ObjectCreationRegistry.GetInstance().CreateObject( header.classId );
-			if( obj == null )
+
+			if( obj == null || header.objectId == 0 )
 				return ;
+
 			gameObjectManager.AddGameObject( obj , header.objectId );
 			obj.Read( ibstream );
 			GameObjectInstantiator.InstantiateObject( obj , gameObjectManager.GetObjectId( obj ) );
+
+			if( header.objectId != gameObjectManager.GetPlayerObjectId() )
+				gameObjectManager.objectStateTable.Add( header.objectId , 1 );
 		}
 		else if( action == ReplicationAction.UPDATE )
 		{
@@ -67,6 +72,7 @@ public class ReplicationManager
 				GameObjectInstantiator.InstantiateObject( obj , gameObjectManager.GetObjectId( obj ) ).AddComponent<OtherPlayer>();
 			}
 			obj.Read( ibstream );
+			gameObjectManager.objectStateTable[header.objectId] = 1;
 		}
 		else if( action == ReplicationAction.DESTROY )
 		{
@@ -74,6 +80,7 @@ public class ReplicationManager
 			gameObjectManager.RemoveGameObject( obj );
 			UnityEngine.GameObject invalidObject = UnityEngine.GameObject.Find( System.Convert.ToString(header.objectId) );
 			UnityEngine.GameObject.Destroy( invalidObject );
+			gameObjectManager.objectStateTable.Remove(header.objectId);
 		}
 		else
 		{

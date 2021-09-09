@@ -32,8 +32,11 @@ public class InputByteStream
 		if( IsEmpty() )
 			return;
 
-		System.Buffer.BlockCopy( buffer , cursor , data , 0 , size );
-		cursor += size;
+		if( size <= GetRemainLength() )
+		{
+			System.Buffer.BlockCopy( buffer , cursor , data , 0 , size );
+			cursor += size;
+		}
 	}
 
 	public void Read( out byte data )
