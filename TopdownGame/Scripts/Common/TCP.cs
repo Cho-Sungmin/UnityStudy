@@ -4,7 +4,7 @@ using System.Net.Sockets;
 namespace TCP {
 
 	class TCP {
-		public const int MAX_PAYLOAD_SIZE = 200;
+		public const int MAX_PAYLOAD_SIZE = 248;
 		public static void SendPacket( Socket socket , InputByteStream packet )
 		{
 			int len = 0;

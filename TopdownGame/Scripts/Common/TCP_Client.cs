@@ -28,7 +28,6 @@ namespace Client {
 
 			//--- Init threads ---//
 			m_threadArr = new Thread[1];
-			m_threadArr[0] = new Thread( this.RecvProcedure );
 
 			//--- Init queues ---//
 			m_recvQueue = new System.Collections.Concurrent.ConcurrentQueue<InputByteStream>();
@@ -41,11 +40,14 @@ namespace Client {
 	
 		public void RunThreads()
 		{
+			m_threadFlag = true;
+
 			for( int i=0; i<m_threadArr.Length; i++ )
 			{
 				m_threadArr[i].Start();
 			}
 		}
+
 
 		public void RegisterHandler( int key , System.Action<InputByteStream> handler )
 		{
@@ -54,7 +56,6 @@ namespace Client {
 
 		public void Connect( int port )
 		{
-			m_threadFlag = true;
 			m_threadArr[0] = new Thread( this.RecvProcedure );
 
 			try {
@@ -73,7 +74,7 @@ namespace Client {
 
 		public void Disconnect()
 		{
-			m_threadFlag = false;
+			m_threadArr[0].Abort();
 			ClearQueue();
 
 			if( m_serverSock.Connected )
@@ -142,26 +143,38 @@ namespace Client {
 
 		void RecvProcedure()
 		{
-			OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
+			try{
+				OutputByteStream obstream = new OutputByteStream( TCP.TCP.MAX_PAYLOAD_SIZE );
 				
-			while( m_threadFlag )
-			{
-				obstream.Flush();
-
-				//--- Receive messages and enqueue data ---//
-				try {
-					Recv( obstream );
-					InputByteStream ibstream = new InputByteStream( obstream );
-					m_recvQueue.Enqueue( ibstream );
-
-					LOG.printLog( ibstream , LOG.TYPE.RECV );
-				}
-				catch( System.Net.Sockets.SocketException e )
+				while( m_threadFlag )
 				{
-					UnityEngine.Debug.LogException( e );
-				}
+					obstream.Flush();
 
+					//--- Receive messages and enqueue data ---//
+					
+						Recv( obstream );
+						InputByteStream ibstream = new InputByteStream( obstream );
+						m_recvQueue.Enqueue( ibstream );
+
+						LOG.printLog( ibstream , LOG.TYPE.RECV );
+				}
 			}
+			catch( System.Net.Sockets.SocketException e )
+			{
+				UnityEngine.Debug.LogException( e );
+			}
+			catch (ThreadInterruptedException e)
+            {
+                LOG.printLog("TCP" , "THREAD" , "ThreadInterruptedException: {0}" + e.Message);
+            }
+			catch (ThreadAbortException e)
+            {
+                LOG.printLog("TCP" , "THREAD" , "ThreadAbortException: {0}" + e.Message);
+            }
+            finally
+            {
+                LOG.printLog("TCP" , "THREAD" , "finally");
+            }
 		}
 
 		public void Send( InputByteStream packet )

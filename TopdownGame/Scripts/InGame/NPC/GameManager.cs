@@ -1,9 +1,12 @@
 ﻿
+using System.Collections;
+using System.Collections.Generic; 
 using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
+	IEnumerator gameObjectCoroutine;
 	Button menuButton;	
 
 	Image optionsPanel;
@@ -47,6 +50,11 @@ public class GameManager : MonoBehaviour
 		SetOnOptions(false);
 		
 	}
+	private void Start()
+	{
+		gameObjectCoroutine = GameObjectCoroutine();
+		StartCoroutine(gameObjectCoroutine);
+	}
 
 	public void OnClickMenu()
 	{
@@ -60,6 +68,7 @@ public class GameManager : MonoBehaviour
 
 	public void OnClickExit()
 	{
+		StopCoroutine(gameObjectCoroutine);
 		gameSession.RequestQuitGame();
 	}
 
@@ -92,7 +101,6 @@ public class GameManager : MonoBehaviour
 			isNPC = false;
 			lineIndex = 0;
 			SetOnTalkPanel( false );
-			
 		}
 
     }
@@ -118,6 +126,53 @@ public class GameManager : MonoBehaviour
 		gameSession.RequestDestroyAllGameObject();
 		gameSession.CloseSession();
 		Resources.UnloadUnusedAssets();
+	}
+
+	void CheckRottenObject()
+	{
+		GameObjectManager gameObjectMgr = gameSession.gameObjectManager;
+		OutputByteStream obstream = new OutputByteStream(TCP.TCP.MAX_PAYLOAD_SIZE);
+		
+		var keys = gameObjectMgr.objectStateTable.Keys;
+		List<uint> objectList = new List<uint>();
+
+		//--- 갱신되지 않은 데이터 확인 ---//
+		foreach( var key in gameObjectMgr.objectStateTable.Keys )
+		{
+			objectList.Add(key);
+		}
+
+		for(int i=0; i<objectList.Count; ++i)
+		{
+			uint key = objectList[i];
+			if( gameObjectMgr.objectStateTable[key] == 0 )
+			{
+				ReplicationHeader header = new ReplicationHeader( ReplicationAction.DESTROY , key , 0 );
+				header.Write(obstream);
+				InputByteStream ibstream = new InputByteStream(obstream);
+				gameSession.replicationManager.Replicate(ibstream);
+			}
+			else
+				gameObjectMgr.objectStateTable[key] = 0;
+		}
+
+		
+	}
+
+	IEnumerator GameObjectCoroutine()
+	{
+		while(gameSession.IsOpen())
+		{
+			Debug.Log("코루틴 시작");
+			yield return null;
+			CheckRottenObject();
+			yield return new WaitForSeconds(0.5f);
+			
+			//StartCoroutine(gameObjectCoroutine);
+
+			
+			Debug.Log("코루틴 끝");
+		}
 	}
 
 }

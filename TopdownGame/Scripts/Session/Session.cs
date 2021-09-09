@@ -7,13 +7,11 @@ public class Session
 	public Client.TCP_Client client;
 	
 	bool isOpen = false;
-	//Thread messageThread;
 	
 	public Session( int port )
 	{
 		PORT = port;
 		client = new Client.TCP_Client();
-		//messageThread = new Thread( Run );
 	}
 
 	public virtual void Init()
@@ -38,7 +36,6 @@ public class Session
 		try {
 			client.Connect( PORT );
 			isOpen = true;
-			//messageThread.Start();
 			client.RunThreads();
 		}
 		catch( System.Exception e )

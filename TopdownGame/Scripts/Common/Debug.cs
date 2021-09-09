@@ -55,8 +55,9 @@ public class LOG
     {
         Header header = new Header(); header.Read( ref packet );
         byte[] payload = new byte[header.len];
-        packet.Read( payload , header.len );
 
+        packet.Read( payload , header.len );
+    
         string headerStr = GetHeaderString( header );
         string logStr = GetHexaString( payload );
 
@@ -167,6 +168,9 @@ public class LOG
             break;
         case FUNCTION_CODE.RES_JOIN_GAME_SUCCESS :
             typeStr = "RES_JOIN_GAME_SUCCESS";
+            break;
+         case FUNCTION_CODE.RES_QUIT_GAME_SUCCESS :
+            typeStr = "RES_QUIT_GAME_SUCCESS";
             break;
         case FUNCTION_CODE.RES_VERIFY_FAIL :
             typeStr = "RES_VERIFY_FAIL";
