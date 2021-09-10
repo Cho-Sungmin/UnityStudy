@@ -167,8 +167,6 @@ public class GameManager : MonoBehaviour
 			yield return null;
 			CheckRottenObject();
 			yield return new WaitForSeconds(0.5f);
-			
-			//StartCoroutine(gameObjectCoroutine);
 
 			
 			Debug.Log("코루틴 끝");

@@ -93,6 +93,8 @@ public class LobbySession : Session
 
 	public void RequestRoomList( InputByteStream packet )
 	{
+		roomList.Clear();
+
 		Header header = new Header();
 		header.Read( ref packet );
 
